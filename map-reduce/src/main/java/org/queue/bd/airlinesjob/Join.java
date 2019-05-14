@@ -2,7 +2,7 @@ package org.queue.bd.airlinesjob;
 
 import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
 import org.queue.bd.MyJob;
-import org.queue.bd.richobjects.RichJoin;
+import org.queue.bd.airlinesjob.richobjects.RichAirline;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -33,11 +33,11 @@ public class Join implements MyJob {
 	 * Mapper for Summarize job
 	 */
 	public static class FirstMapper
-    	extends Mapper<Text, Text, Text, RichJoin>{
+    	extends Mapper<Text, Text, Text, RichAirline>{
 
 		public void map(Text key, Text value, Context context)
 				throws IOException, InterruptedException {
-		    context.write(key, new RichJoin(Double.parseDouble(value.toString())));
+		    context.write(key, new RichAirline(Double.parseDouble(value.toString())));
 		}
 		
 	}
@@ -46,13 +46,13 @@ public class Join implements MyJob {
 	 * Mapper for airlines dataset
 	 */
 	public static class SecondMapper
-	extends Mapper<LongWritable, Text, Text, RichJoin>{
+	extends Mapper<LongWritable, Text, Text, RichAirline>{
 
         public void map(LongWritable key, Text value, Context context)
 				throws IOException, InterruptedException {
 
             Airline airline = new Airline(value.toString());
-            context.write(new Text(airline.getIata_code()), new RichJoin(airline.getAirline()));
+            context.write(new Text(airline.getIata_code()), new RichAirline(airline.getAirline()));
 		}
 		
 	}
@@ -61,19 +61,19 @@ public class Join implements MyJob {
 	 * Reducer
 	 */
 	public static class JobReducer
-	    extends Reducer<Text, RichJoin, Text, DoubleWritable> {
+	    extends Reducer<Text, RichAirline, Text, DoubleWritable> {
 
 
         Text airline = new Text();
         DoubleWritable average = new DoubleWritable();
 
-        public void reduce(Text key, Iterable<RichJoin> values, Context context)
+        public void reduce(Text key, Iterable<RichAirline> values, Context context)
 				throws IOException, InterruptedException {
 			
-			/*List<RichJoin> firstDatasetRecords = new ArrayList<>();
-			List<RichJoin> secondDatasetRecords = new ArrayList<>();*/
+			/*List<RichAirline> firstDatasetRecords = new ArrayList<>();
+			List<RichAirline> secondDatasetRecords = new ArrayList<>();*/
 
-			for(RichJoin val : values) {
+			for(RichAirline val : values) {
 				if (val.isFirst()) {
 				    //firstDatasetRecords.add(val);
                     average.set(val.getAverage());
@@ -82,8 +82,8 @@ public class Join implements MyJob {
                     airline.set(val.getAirline());
                 }
 			}
-			/*for(RichJoin first : firstDatasetRecords) {
-				for(RichJoin second : secondDatasetRecords) {
+			/*for(RichAirline first : firstDatasetRecords) {
+				for(RichAirline second : secondDatasetRecords) {
                     context.write(new Text(second.getAirline()), new DoubleWritable(first.getAverage()));
 				}		 
 			}*/
@@ -117,7 +117,7 @@ public class Join implements MyJob {
         //job.setNumReduceTasks(NUM_REDUCERS);
 
         job.setMapOutputKeyClass(Text.class);
-        job.setMapOutputValueClass(RichJoin.class);
+        job.setMapOutputValueClass(RichAirline.class);
         job.setReducerClass(JobReducer.class);
         job.setOutputKeyClass(Text.class);
         job.setOutputValueClass(DoubleWritable.class);

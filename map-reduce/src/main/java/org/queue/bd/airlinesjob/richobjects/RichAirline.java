@@ -1,4 +1,4 @@
-package org.queue.bd.richobjects;
+package org.queue.bd.airlinesjob.richobjects;
 
 import org.apache.hadoop.io.WritableComparable;
 
@@ -6,22 +6,22 @@ import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
 
-public class RichJoin implements WritableComparable {
+public class RichAirline implements WritableComparable {
 
     private boolean first;
     private String airline;
     private double average;
 
 
-    public RichJoin() { }
+    public RichAirline() { }
 
-    public RichJoin(final String airline) {
+    public RichAirline(final String airline) {
         this.first = false;
         this.airline = airline;
         this.average = -1;
     }
 
-    public RichJoin(final double average) {
+    public RichAirline(final double average) {
         this.first = true;
         this.airline = "";
         this.average = average;
@@ -66,10 +66,10 @@ public class RichJoin implements WritableComparable {
 
     @Override
     public int compareTo(Object o){
-        if (this.first && ((RichJoin) o).first) {
-            return Double.compare(this.average, ((RichJoin) o).average);
-        } else if (!this.first && !((RichJoin) o).first) {
-            return this.airline.compareTo(((RichJoin) o).airline);
+        if (this.first && ((RichAirline) o).first) {
+            return Double.compare(this.average, ((RichAirline) o).average);
+        } else if (!this.first && !((RichAirline) o).first) {
+            return this.airline.compareTo(((RichAirline) o).airline);
         }
         return 0;
     }

@@ -1,71 +1,75 @@
 package org.queue.bd.airportsjob.richobjects;
 
 import org.apache.hadoop.io.Writable;
-import org.apache.hadoop.io.WritableComparable;
-import org.queue.bd.richobjects.RichAverage;
 
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
 
-enum TimeSlot {
-
-    MORNING("Morning"),
-    AFTERNOON("Afternoon"),
-    EVENING("Evening"),
-    NIGHT("Night");
-
-    private final String description;
-
-    TimeSlot(final String description) {
-        this.description = description;
-    }
-
-    public String getDescription() {
-        return this.description;
-    }
-}
-
 public class RichAirport implements Writable {
 
-    private String airport;
+    private boolean first;
     private TimeSlot timeSlot;
+    private double average;
+    private String airport;
 
     public RichAirport() { }
 
-    public RichAirport(final String airport, final TimeSlot timeSlot){
-        this.airport = airport;
+    public RichAirport(final TimeSlot timeSlot, final double average) {
+        this.first = true;
         this.timeSlot = timeSlot;
+        this.average = average;
+        this.airport = "";
     }
 
-    public String getAirport() {
-        return airport;
+    public RichAirport(final String airport) {
+        this.first = false;
+        this.timeSlot = null;
+        this.average = -1;
+        this.airport = airport;
+    }
+
+    public boolean isFirst() {
+        return first;
     }
 
     public TimeSlot getTimeSlot() {
         return timeSlot;
     }
 
+    public double getAverage() {
+        return average;
+    }
+
+    public String getAirport() {
+        return airport;
+    }
+
     public void write(DataOutput out) throws IOException {
-        out.writeInt(airport.length());
-        out.writeChars(airport);
-        out.writeInt(timeSlot.ordinal());
-    }
-    public void readFields(DataInput in) throws IOException {
-
-        airport = "";
-        final int airportLength = in.readInt();
-        for (int i = 0; i < airportLength; i++) {
-            airport = airport + in.readChar();
+        out.writeBoolean(first);
+        if(first) {
+            out.writeInt(timeSlot.ordinal());
+            out.writeDouble(average);
+        } else {
+            out.writeInt(airport.length());
+            out.writeChars(airport);
         }
-        timeSlot = TimeSlot.values()[in.readInt()];
     }
 
-    public static TimeSlot getTimeSlot(final String time) {
-        final int hour = Integer.parseInt(time.substring(0, 2));
-        if (hour >= 0 && hour < 6) return TimeSlot.NIGHT;
-        if (hour >= 6 && hour < 12) return TimeSlot.MORNING;
-        if (hour >= 12 && hour < 18) return TimeSlot.AFTERNOON;
-        return TimeSlot.EVENING;
+    public void readFields(DataInput in) throws IOException {
+        first = in.readBoolean();
+        if (first) {
+            timeSlot = TimeSlot.getTimeSlot(in.readInt());
+            average = in.readDouble();
+            airport = "";
+        } else {
+            timeSlot = null;
+            average = -1;
+            airport = "";
+            final int airportLength = in.readInt();
+            for (int i = 0; i < airportLength; i++) {
+                airport = airport + in.readChar();
+            }
+        }
     }
 }

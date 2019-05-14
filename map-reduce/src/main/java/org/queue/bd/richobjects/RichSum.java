@@ -6,15 +6,15 @@ import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
 
-public class RichAverage implements WritableComparable {
+public class RichSum implements WritableComparable {
 
     private int sum;
     private int count;
 
 
-    public RichAverage() { }
+    public RichSum() { }
 
-    public RichAverage(final int sum, final int count){
+    public RichSum(final int sum, final int count){
         this.sum = sum;
         this.count = count;
     }
@@ -39,7 +39,7 @@ public class RichAverage implements WritableComparable {
     @Override
     public int compareTo(Object o){
         double presentValue = this.sum / this.count;
-        double compareValue = ((RichAverage) o).sum / ((RichAverage) o).count;
+        double compareValue = ((RichSum) o).sum / ((RichSum) o).count;
         return Double.compare(presentValue, compareValue);
     }
 

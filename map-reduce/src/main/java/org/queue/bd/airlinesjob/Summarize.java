@@ -1,7 +1,7 @@
 package org.queue.bd.airlinesjob;
 
 import org.queue.bd.MyJob;
-import org.queue.bd.richobjects.RichAverage;
+import org.queue.bd.richobjects.RichSum;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -24,27 +24,27 @@ public class Summarize implements MyJob {
     private static final String OUTPUT_PATH = "airlines/output1";
 
     public static class SummarizeMapper
-	extends Mapper<LongWritable, Text, Text, RichAverage>{
+	extends Mapper<LongWritable, Text, Text, RichSum>{
 
 		public void map(LongWritable key, Text value, Context context)
                 throws IOException, InterruptedException {
 			final Flight flight = new Flight(value.toString());
 			if (flight.getCancelled().equals("0") && flight.getDiverted().equals("0")) {
-                final RichAverage richAverage = new RichAverage(Integer.parseInt(flight.getArrival_delay()), 1);
-                context.write(new Text(flight.getAirline()), richAverage);
+                final RichSum richSum = new RichSum(Integer.parseInt(flight.getArrival_delay()), 1);
+                context.write(new Text(flight.getAirline()), richSum);
             }
 		}
 	}
 
 	public static class SummarizeReducer
-	extends Reducer<Text, RichAverage, Text, DoubleWritable> {
+	extends Reducer<Text, RichSum, Text, DoubleWritable> {
 		private DoubleWritable result = new DoubleWritable();
 
-		public void reduce(Text key, Iterable<RichAverage> values, Context context)
+		public void reduce(Text key, Iterable<RichSum> values, Context context)
                 throws IOException, InterruptedException {
 			double totalSum = 0;
 			double totalCount = 0;
-			for (RichAverage val : values) {
+			for (RichSum val : values) {
 				totalSum += val.getSum();
 				totalCount += val.getCount();
 			}
@@ -73,7 +73,7 @@ public class Summarize implements MyJob {
 
         job.setReducerClass(SummarizeReducer.class);
         job.setMapOutputKeyClass(Text.class);
-        job.setMapOutputValueClass(RichAverage.class);
+        job.setMapOutputValueClass(RichSum.class);
         job.setOutputKeyClass(Text.class);
         job.setOutputValueClass(DoubleWritable.class);
 

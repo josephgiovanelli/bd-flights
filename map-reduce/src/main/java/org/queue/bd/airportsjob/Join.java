@@ -14,8 +14,9 @@ import org.apache.hadoop.mapreduce.lib.input.MultipleInputs;
 import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.queue.bd.MyJob;
-import org.queue.bd.richobjects.RichJoin;
-import pojos.Airline;
+import org.queue.bd.airportsjob.richobjects.RichAirport;
+import org.queue.bd.airportsjob.richobjects.TimeSlot;
+import pojos.Airport;
 
 import java.io.IOException;
 
@@ -25,19 +26,21 @@ import java.io.IOException;
 public class Join implements MyJob {
 
     private static final String JOB_NAME = "join";
-    private static final String FIRST_INPUT_PATH = "output1";
-    private static final String SECOND_INPUT_PATH = "flights/airlines.csv";
-    private static final String OUTPUT_PATH = "output2";
+    private static final String FIRST_INPUT_PATH = "airports/output1";
+    private static final String SECOND_INPUT_PATH = "flights/airports.csv";
+    private static final String OUTPUT_PATH = "airports/output2";
 		
 	/**
 	 * Mapper for Summarize job
 	 */
 	public static class FirstMapper
-    	extends Mapper<Text, Text, Text, RichJoin>{
+    	extends Mapper<Text, Text, Text, RichAirport>{
 
 		public void map(Text key, Text value, Context context)
 				throws IOException, InterruptedException {
-		    context.write(key, new RichJoin(Double.parseDouble(value.toString())));
+            final String[] richKey = key.toString().split("-");
+		    context.write(new Text(richKey[0]), new RichAirport(TimeSlot.getTimeSlot(Integer.parseInt(richKey[1])),
+                    Double.parseDouble(value.toString())));
 		}
 		
 	}
@@ -46,13 +49,12 @@ public class Join implements MyJob {
 	 * Mapper for airlines dataset
 	 */
 	public static class SecondMapper
-	extends Mapper<LongWritable, Text, Text, RichJoin>{
+	extends Mapper<LongWritable, Text, Text, RichAirport>{
 
         public void map(LongWritable key, Text value, Context context)
 				throws IOException, InterruptedException {
-
-            Airline airline = new Airline(value.toString());
-            context.write(new Text(airline.getIata_code()), new RichJoin(airline.getAirline()));
+            Airport airport = new Airport(value.toString());
+            context.write(new Text(airport.getIata_code()), new RichAirport(airport.getAirport()));
 		}
 		
 	}
@@ -61,33 +63,38 @@ public class Join implements MyJob {
 	 * Reducer
 	 */
 	public static class JobReducer
-	    extends Reducer<Text, RichJoin, Text, DoubleWritable> {
+	    extends Reducer<Text, RichAirport, Text, DoubleWritable> {
 
 
-        Text airline = new Text();
+        Text richKey = new Text();
         DoubleWritable average = new DoubleWritable();
 
-        public void reduce(Text key, Iterable<RichJoin> values, Context context)
+        public void reduce(Text key, Iterable<RichAirport> values, Context context)
 				throws IOException, InterruptedException {
 			
-			/*List<RichJoin> firstDatasetRecords = new ArrayList<>();
-			List<RichJoin> secondDatasetRecords = new ArrayList<>();*/
+			/*List<RichAirport> firstDatasetRecords = new ArrayList<>();
+			List<RichAirport> secondDatasetRecords = new ArrayList<>();*/
 
-			for(RichJoin val : values) {
+			TimeSlot timeSlot = null;
+			String airport = "";
+
+			for(RichAirport val : values) {
 				if (val.isFirst()) {
 				    //firstDatasetRecords.add(val);
+                    timeSlot = val.getTimeSlot();
                     average.set(val.getAverage());
                 } else {
 				    //secondDatasetRecords.add(val);
-                    airline.set(val.getAirline());
+                    airport = val.getAirport();
                 }
 			}
-			/*for(RichJoin first : firstDatasetRecords) {
-				for(RichJoin second : secondDatasetRecords) {
+			/*for(RichAirport first : firstDatasetRecords) {
+				for(RichAirport second : secondDatasetRecords) {
                     context.write(new Text(second.getAirline()), new DoubleWritable(first.getAverage()));
 				}		 
 			}*/
-            context.write(airline, average);
+			richKey.set(airport + "-" + timeSlot.ordinal());
+            context.write(richKey, average);
         }
 	 
 	}
@@ -117,7 +124,7 @@ public class Join implements MyJob {
         //job.setNumReduceTasks(NUM_REDUCERS);
 
         job.setMapOutputKeyClass(Text.class);
-        job.setMapOutputValueClass(RichJoin.class);
+        job.setMapOutputValueClass(RichAirport.class);
         job.setReducerClass(JobReducer.class);
         job.setOutputKeyClass(Text.class);
         job.setOutputValueClass(DoubleWritable.class);
