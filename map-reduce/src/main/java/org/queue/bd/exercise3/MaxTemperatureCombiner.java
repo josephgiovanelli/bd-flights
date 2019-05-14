@@ -1,8 +1,7 @@
-package exercise3;
+package org.queue.bd.exercise3;
 import java.io.IOException;
 import java.util.Iterator;
 
-import org.apache.hadoop.io.DoubleWritable;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapred.MapReduceBase;
@@ -10,14 +9,14 @@ import org.apache.hadoop.mapred.OutputCollector;
 import org.apache.hadoop.mapred.Reducer;
 import org.apache.hadoop.mapred.Reporter;
 
-public class MaxTemperatureReducer extends MapReduceBase implements Reducer<Text, IntWritable, Text, DoubleWritable> {
+public class MaxTemperatureCombiner extends MapReduceBase implements Reducer<Text, IntWritable, Text, IntWritable> {
 
-	public void reduce(Text key, Iterator<IntWritable> values, OutputCollector<Text, DoubleWritable> output,
+	public void reduce(Text key, Iterator<IntWritable> values, OutputCollector<Text, IntWritable> output,
 			Reporter reporter) throws IOException {
 		int maxValue = Integer.MIN_VALUE;
 		while (values.hasNext()) {
 			maxValue = Math.max(maxValue, values.next().get());
 		}
-		output.collect(key, new DoubleWritable(((double) maxValue) / 10));
+		output.collect(key, new IntWritable(maxValue));
 	}
 }

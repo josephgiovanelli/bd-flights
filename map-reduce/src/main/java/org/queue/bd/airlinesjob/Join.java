@@ -1,7 +1,8 @@
-package airlinesjob;
+package org.queue.bd.airlinesjob;
 
 import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
-import richobjects.RichJoin;
+import org.queue.bd.MyJob;
+import org.queue.bd.richobjects.RichJoin;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -20,7 +21,12 @@ import java.io.IOException;
 /**
  * MapReduce job to join Summarize job and airlines.csv.
  */
-public class Join {
+public class Join implements MyJob {
+
+    private static final String JOB_NAME = "join";
+    private static final String FIRST_INPUT_PATH = "output1";
+    private static final String SECOND_INPUT_PATH = "flights/airlines.csv";
+    private static final String OUTPUT_PATH = "output2";
 		
 	/**
 	 * Mapper for Summarize job
@@ -85,18 +91,18 @@ public class Join {
 	 
 	}
 
-	
-	public static void main(String[] args) throws Exception {
-	
-		Path firstInputPath = new Path(args[0]);
-		Path secondInputPath = new Path(args[1]);
-        Path outputPath = new Path(args[2]);
+    @Override
+    public Job getJob() throws IOException {
 
         Configuration conf = new Configuration();
-		Job job = Job.getInstance(conf, "join");
-		
-		MultipleInputs.addInputPath(job, firstInputPath, KeyValueTextInputFormat.class, FirstMapper.class);
-		MultipleInputs.addInputPath(job, secondInputPath, TextInputFormat.class, SecondMapper.class);
+        Job job = Job.getInstance(conf, JOB_NAME);
+
+        Path firstInputPath = new Path(FIRST_INPUT_PATH);
+        Path secondInputPath = new Path(SECOND_INPUT_PATH);
+        Path outputPath = new Path(OUTPUT_PATH);
+
+        MultipleInputs.addInputPath(job, firstInputPath, KeyValueTextInputFormat.class, FirstMapper.class);
+        MultipleInputs.addInputPath(job, secondInputPath, TextInputFormat.class, SecondMapper.class);
 
 
         FileSystem fs = FileSystem.get(conf);
@@ -107,11 +113,8 @@ public class Join {
 
         job.setJarByClass(Join.class);
 
-        if(args.length>3){
-            if(Integer.parseInt(args[3])>=0){
-                job.setNumReduceTasks(Integer.parseInt(args[3]));
-            }
-        }
+        //job.setNumReduceTasks(NUM_REDUCERS);
+
         job.setMapOutputKeyClass(Text.class);
         job.setMapOutputValueClass(RichJoin.class);
         job.setReducerClass(JobReducer.class);
@@ -120,7 +123,6 @@ public class Join {
 
         FileOutputFormat.setOutputPath(job, outputPath);
 
-        System.exit(job.waitForCompletion(true) ? 0 : 1);
-
-	}
+        return job;
+    }
 }

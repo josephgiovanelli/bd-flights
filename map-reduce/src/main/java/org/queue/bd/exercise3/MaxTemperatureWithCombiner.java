@@ -1,4 +1,4 @@
-package exercise3;
+package org.queue.bd.exercise3;
 import java.io.IOException;
 
 import org.apache.hadoop.conf.Configuration;
@@ -12,9 +12,9 @@ import org.apache.hadoop.mapred.FileOutputFormat;
 import org.apache.hadoop.mapred.JobClient;
 import org.apache.hadoop.mapred.JobConf;
 
-public class MaxTemperature {
+public class MaxTemperatureWithCombiner {
 	public static void main(String[] args) throws IOException {
-		JobConf conf = new JobConf(MaxTemperature.class);
+		JobConf conf = new JobConf(MaxTemperatureWithCombiner.class);
 		conf.setJobName("Max temperature");
 
 		Path inputPath = new Path(args[0]), outputPath = new Path(args[1]);
@@ -28,6 +28,7 @@ public class MaxTemperature {
 		FileOutputFormat.setOutputPath(conf, outputPath);
 
 		conf.setMapperClass(MaxTemperatureMapper.class);
+		conf.setCombinerClass(MaxTemperatureCombiner.class);
 		conf.setReducerClass(MaxTemperatureReducer.class);
 
 		if (args.length > 2 && Integer.parseInt(args[2]) >= 0) {

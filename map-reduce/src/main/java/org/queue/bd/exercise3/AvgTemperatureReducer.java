@@ -1,4 +1,4 @@
-package exercise3;
+package org.queue.bd.exercise3;
 import java.io.IOException;
 import java.util.Iterator;
 

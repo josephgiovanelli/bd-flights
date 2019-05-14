@@ -1,6 +1,7 @@
-package airlinesjob;
+package org.queue.bd.airlinesjob;
 
-import richobjects.RichAverage;
+import org.queue.bd.MyJob;
+import org.queue.bd.richobjects.RichAverage;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -16,9 +17,13 @@ import pojos.Flight;
 
 import java.io.IOException;
 
-public class Summarize {
+public class Summarize implements MyJob {
 
-	public static class SummarizeMapper
+    private static final String JOB_NAME = "summarize";
+    private static final String INPUT_PATH = "flights/flights.csv";
+    private static final String OUTPUT_PATH = "output1";
+
+    public static class SummarizeMapper
 	extends Mapper<LongWritable, Text, Text, RichAverage>{
 
 		public void map(LongWritable key, Text value, Context context)
@@ -48,35 +53,33 @@ public class Summarize {
 		}
 	}
 
-	public static void main(String[] args) throws Exception {
-		Configuration conf = new Configuration();
-		Job job = Job.getInstance(conf, "summarize");
+    @Override
+    public Job getJob() throws IOException {
+        Configuration conf = new Configuration();
+        Job job = Job.getInstance(conf, JOB_NAME);
 
-		Path inputPath = new Path(args[0]);
-		Path outputPath = new Path(args[1]);
-		FileSystem fs = FileSystem.get(new Configuration());
+        Path inputPath = new Path(INPUT_PATH);
+        Path outputPath = new Path(OUTPUT_PATH);
+        FileSystem fs = FileSystem.get(new Configuration());
 
-		if (fs.exists(outputPath)) {
-			fs.delete(outputPath, true);
-		}
+        if (fs.exists(outputPath)) {
+            fs.delete(outputPath, true);
+        }
 
-		job.setJarByClass(Summarize.class);
-		job.setMapperClass(SummarizeMapper.class);
-		
-		if(args.length>2){
-			if(Integer.parseInt(args[2])>=0){
-				job.setNumReduceTasks(Integer.parseInt(args[2]));
-			}
-		}
-		job.setReducerClass(SummarizeReducer.class);
-		job.setMapOutputKeyClass(Text.class);
-		job.setMapOutputValueClass(RichAverage.class);
-		job.setOutputKeyClass(Text.class);
-		job.setOutputValueClass(DoubleWritable.class);
+        job.setJarByClass(Summarize.class);
+        job.setMapperClass(SummarizeMapper.class);
 
-		FileInputFormat.addInputPath(job, inputPath);
-		FileOutputFormat.setOutputPath(job, outputPath);
+        //job.setNumReduceTasks(NUM_REDUCERS);
 
-		System.exit(job.waitForCompletion(true) ? 0 : 1);
-	}
+        job.setReducerClass(SummarizeReducer.class);
+        job.setMapOutputKeyClass(Text.class);
+        job.setMapOutputValueClass(RichAverage.class);
+        job.setOutputKeyClass(Text.class);
+        job.setOutputValueClass(DoubleWritable.class);
+
+        FileInputFormat.addInputPath(job, inputPath);
+        FileOutputFormat.setOutputPath(job, outputPath);
+
+        return job;
+    }
 }

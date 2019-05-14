@@ -1,4 +1,4 @@
-package exercise1
+package org.queue.bd.exercise1
 
 import materiale.{StationData, WeatherData}
 import org.apache.spark.{SparkConf, SparkContext}

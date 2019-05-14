@@ -1,4 +1,4 @@
-package prof;
+package org.queue.bd.prof;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;

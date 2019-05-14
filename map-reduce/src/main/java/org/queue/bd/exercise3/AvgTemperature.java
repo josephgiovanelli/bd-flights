@@ -1,4 +1,4 @@
-package exercise3;
+package org.queue.bd.exercise3;
 import java.io.IOException;
 
 import org.apache.hadoop.conf.Configuration;
@@ -12,34 +12,35 @@ import org.apache.hadoop.mapred.FileOutputFormat;
 import org.apache.hadoop.mapred.JobClient;
 import org.apache.hadoop.mapred.JobConf;
 
-public class MaxTemperatureWithCombiner {
+public class AvgTemperature {
 	public static void main(String[] args) throws IOException {
-		JobConf conf = new JobConf(MaxTemperatureWithCombiner.class);
-		conf.setJobName("Max temperature");
+		JobConf conf = new JobConf(AvgTemperature.class);     
+		conf.setJobName("Avg temperature");
 
-		Path inputPath = new Path(args[0]), outputPath = new Path(args[1]);
+		Path inputPath = new Path(args[0]), 
+				outputPath = new Path(args[1]);
 		FileSystem fs = FileSystem.get(new Configuration());
 
-		if (fs.exists(outputPath)) {
+		if(fs.exists(outputPath)) {
 			fs.delete(outputPath, true);
 		}
 
-		FileInputFormat.addInputPath(conf, inputPath);
+		FileInputFormat.addInputPath(conf, inputPath);      
 		FileOutputFormat.setOutputPath(conf, outputPath);
 
-		conf.setMapperClass(MaxTemperatureMapper.class);
-		conf.setCombinerClass(MaxTemperatureCombiner.class);
-		conf.setReducerClass(MaxTemperatureReducer.class);
+		conf.setMapperClass(AvgTemperatureMapper.class);      
+		conf.setReducerClass(AvgTemperatureReducer.class);
 
-		if (args.length > 2 && Integer.parseInt(args[2]) >= 0) {
+		if(args.length>2 && Integer.parseInt(args[2])>=0){
 			conf.setNumReduceTasks(Integer.parseInt(args[2]));
-		} else {
+		}
+		else{
 			conf.setNumReduceTasks(1);
 		}
 
-		conf.setMapOutputKeyClass(Text.class);
-		conf.setMapOutputValueClass(IntWritable.class);
-		conf.setOutputKeyClass(Text.class);
+		conf.setMapOutputKeyClass(Text.class);      
+		conf.setMapOutputValueClass(IntWritable.class);      
+		conf.setOutputKeyClass(Text.class);      
 		conf.setOutputValueClass(DoubleWritable.class);
 
 		JobClient.runJob(conf);

@@ -1,9 +1,8 @@
-package airlinesjob;
+package org.queue.bd.airlinesjob;
 
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.WritableComparator;
 import org.apache.hadoop.mapreduce.lib.input.KeyValueTextInputFormat;
-import richobjects.RichResult;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -14,15 +13,19 @@ import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
+import org.queue.bd.MyJob;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 
-public class Sort {
+public class Sort implements MyJob {
+
+    private static final String JOB_NAME = "sort";
+    private static final String INPUT_PATH = "output2";
+    private static final String OUTPUT_PATH = "output3";
 
 	public static class SortMapper
 	extends Mapper<Text, Text, DoubleWritable, Text>{
@@ -75,35 +78,38 @@ public class Sort {
 
     }
 
-	public static void main(String[] args) throws Exception {
-		Configuration conf = new Configuration();
-		Job job = Job.getInstance(conf, "sort");
+    @Override
+    public Job getJob() throws IOException {
 
-		Path inputPath = new Path(args[0]);
-        Path outputPath = new Path(args[1]);
-		FileSystem fs = FileSystem.get(new Configuration());
+        Configuration conf = new Configuration();
+        Job job = Job.getInstance(conf, JOB_NAME);
 
-		if (fs.exists(outputPath)) {
-			fs.delete(outputPath, true);
-		}
+        Path inputPath = new Path(INPUT_PATH);
+        Path outputPath = new Path(OUTPUT_PATH);
+        FileSystem fs = FileSystem.get(new Configuration());
 
-		job.setJarByClass(Sort.class);
-		job.setMapperClass(SortMapper.class);
+        if (fs.exists(outputPath)) {
+            fs.delete(outputPath, true);
+        }
 
-		job.setNumReduceTasks(1);
+        job.setJarByClass(Sort.class);
+        job.setMapperClass(SortMapper.class);
+
+        job.setNumReduceTasks(1);
+
         job.setMapOutputKeyClass(DoubleWritable.class);
         job.setMapOutputValueClass(Text.class);
-		job.setReducerClass(SortReducer.class);
-		job.setOutputKeyClass(Text.class);
-		job.setOutputValueClass(DoubleWritable.class);
+        job.setReducerClass(SortReducer.class);
+        job.setOutputKeyClass(Text.class);
+        job.setOutputValueClass(DoubleWritable.class);
 
         job.setSortComparatorClass(IntComparator.class);
 
         job.setInputFormatClass(KeyValueTextInputFormat.class);
 
         FileInputFormat.addInputPath(job, inputPath);
-		FileOutputFormat.setOutputPath(job, outputPath);
+        FileOutputFormat.setOutputPath(job, outputPath);
 
-		System.exit(job.waitForCompletion(true) ? 0 : 1);
-	}
+        return job;
+    }
 }

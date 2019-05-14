@@ -1,4 +1,4 @@
-package exercise4;
+package org.queue.bd.exercise4;
 import java.io.IOException;
 import java.util.StringTokenizer;
 import java.util.TreeSet;

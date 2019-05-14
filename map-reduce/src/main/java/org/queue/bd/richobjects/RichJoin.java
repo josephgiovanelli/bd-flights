@@ -1,4 +1,4 @@
-package richobjects;
+package org.queue.bd.richobjects;
 
 import org.apache.hadoop.io.WritableComparable;
 

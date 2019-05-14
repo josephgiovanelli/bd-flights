@@ -1,4 +1,4 @@
-package exercise1
+package org.queue.bd.exercise1
 
 import org.apache.spark.SparkContext
 import org.apache.spark.SparkConf

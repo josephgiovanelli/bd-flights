@@ -1,4 +1,4 @@
-package exercise2;
+package org.queue.bd.exercise2;
 import java.io.IOException;
 import java.util.StringTokenizer;
 
