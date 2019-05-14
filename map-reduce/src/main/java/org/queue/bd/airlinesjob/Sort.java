@@ -24,8 +24,8 @@ import java.util.List;
 public class Sort implements MyJob {
 
     private static final String JOB_NAME = "sort";
-    private static final String INPUT_PATH = "output2";
-    private static final String OUTPUT_PATH = "output3";
+    private static final String INPUT_PATH = "airlines/output2";
+    private static final String OUTPUT_PATH = "airlines/output3";
 
 	public static class SortMapper
 	extends Mapper<Text, Text, DoubleWritable, Text>{

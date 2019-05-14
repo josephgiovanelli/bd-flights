@@ -1,8 +1,5 @@
-package org.queue.bd.airlinesjob;
+package org.queue.bd.airportsjob;
 
-import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
-import org.queue.bd.MyJob;
-import org.queue.bd.richobjects.RichJoin;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -14,7 +11,10 @@ import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.hadoop.mapreduce.lib.input.KeyValueTextInputFormat;
 import org.apache.hadoop.mapreduce.lib.input.MultipleInputs;
+import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
+import org.queue.bd.MyJob;
+import org.queue.bd.richobjects.RichJoin;
 import pojos.Airline;
 
 import java.io.IOException;
@@ -25,9 +25,9 @@ import java.io.IOException;
 public class Join implements MyJob {
 
     private static final String JOB_NAME = "join";
-    private static final String FIRST_INPUT_PATH = "airlines/output1";
+    private static final String FIRST_INPUT_PATH = "output1";
     private static final String SECOND_INPUT_PATH = "flights/airlines.csv";
-    private static final String OUTPUT_PATH = "airlines/output2";
+    private static final String OUTPUT_PATH = "output2";
 		
 	/**
 	 * Mapper for Summarize job
