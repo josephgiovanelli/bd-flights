@@ -1,5 +1,7 @@
 package org.queue.bd.airlinesjob;
 
+import org.apache.hadoop.mapred.OutputCollector;
+import org.apache.hadoop.mapred.Reporter;
 import org.queue.bd.MyJob;
 import org.queue.bd.richobjects.RichSum;
 import org.apache.hadoop.conf.Configuration;
@@ -16,6 +18,7 @@ import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import pojos.Flight;
 
 import java.io.IOException;
+import java.util.Iterator;
 
 public class Summarize implements MyJob {
 
@@ -35,6 +38,21 @@ public class Summarize implements MyJob {
             }
 		}
 	}
+
+    public static class RichSumCombiner
+    extends Reducer<Text, RichSum, Text, RichSum> {
+
+        public void reduce(Text key, Iterable<RichSum> values, Context context)
+                throws IOException, InterruptedException {
+            int sum = 0;
+            int count = 0;
+            for (RichSum value : values) {
+                sum += value.getSum();
+                count += value.getCount();
+            }
+            context.write(key, new RichSum(sum, count));
+        }
+    }
 
 	public static class SummarizeReducer
 	extends Reducer<Text, RichSum, Text, DoubleWritable> {
@@ -70,7 +88,7 @@ public class Summarize implements MyJob {
         job.setMapperClass(SummarizeMapper.class);
 
         //job.setNumReduceTasks(NUM_REDUCERS);
-
+        job.setCombinerClass(RichSumCombiner.class);
         job.setReducerClass(SummarizeReducer.class);
         job.setMapOutputKeyClass(Text.class);
         job.setMapOutputValueClass(RichSum.class);

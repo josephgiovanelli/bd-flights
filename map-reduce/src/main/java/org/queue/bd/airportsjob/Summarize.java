@@ -40,6 +40,21 @@ public class Summarize implements MyJob {
 		}
 	}
 
+    public static class RichSumCombiner
+            extends Reducer<RichKey, RichSum, RichKey, RichSum> {
+
+        public void reduce(RichKey key, Iterable<RichSum> values, Context context)
+                throws IOException, InterruptedException {
+            int sum = 0;
+            int count = 0;
+            for (RichSum value : values) {
+                sum += value.getSum();
+                count += value.getCount();
+            }
+            context.write(key, new RichSum(sum, count));
+        }
+    }
+
 	public static class SummarizeReducer
 	extends Reducer<RichKey, RichSum, Text, DoubleWritable> {
 		private DoubleWritable result = new DoubleWritable();
@@ -77,6 +92,7 @@ public class Summarize implements MyJob {
 
         //job.setNumReduceTasks(NUM_REDUCERS);
 
+        job.setCombinerClass(RichSumCombiner.class);
         job.setReducerClass(SummarizeReducer.class);
         job.setMapOutputKeyClass(RichKey.class);
         job.setMapOutputValueClass(RichSum.class);
