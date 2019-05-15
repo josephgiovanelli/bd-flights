@@ -7,7 +7,7 @@ import java.util.ArrayList;
 /**
  * MapReduce job to ...
  */
-public class AirlineJob {
+public class AirlinesJob {
 
 	public static void main(String[] args) throws Exception {
 

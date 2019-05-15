@@ -31,7 +31,7 @@ public class Summarize implements MyJob {
 		public void map(LongWritable key, Text value, Context context)
                 throws IOException, InterruptedException {
 			final Flight flight = new Flight(value.toString());
-			if (flight.getCancelled().equals("0") && flight.getDiverted().equals("0")) {
+			if (flight.getCancelled().equals("0") && flight.getDiverted().equals("0") && flight.getOrigin_airport().length() == 3) {
                 final RichSum richSum = new RichSum(Integer.parseInt(flight.getTaxi_out()), 1);
                 final RichKey richKey = new RichKey(flight.getOrigin_airport(),
                         TimeSlot.getTimeSlot(flight.getScheduled_departure()));
