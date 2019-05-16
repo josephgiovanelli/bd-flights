@@ -6,6 +6,7 @@ import pojos.{Airline, Flight}
 object AirlinesJob {
 
   def main(args: Array[String]): Unit = {
+
     val sc = new SparkContext(new SparkConf().setAppName("Spark AirlinesJob"))
 
     val rddAirlines = sc.textFile("hdfs:/user/jgiovanelli/flights/airlines.csv")
@@ -19,7 +20,6 @@ object AirlinesJob {
       .aggregateByKey((0.0, 0.0))((a, v) => (a._1 + v, a._2 + 1), (a1, a2) => (a1._1 + a2._1, a1._2 + a2._2))
       .map({ case (k, v) => (k, v._1 / v._2) })
 
-
     val broadcastRddAirlines = sc.broadcast(rddAirlines.collectAsMap())
 
     val rddJoined = rddFlights
@@ -31,6 +31,6 @@ object AirlinesJob {
       .cache()
 
     rddJoined.collect()
-    rddJoined.saveAsTextFile("hdfs:/user/jgiovanelli/spark/avgTempPerMonth")
+    rddJoined.saveAsTextFile("hdfs:/user/jgiovanelli/spark/airlines")
   }
 }
