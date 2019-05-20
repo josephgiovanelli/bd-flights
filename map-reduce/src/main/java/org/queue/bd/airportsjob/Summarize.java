@@ -13,7 +13,7 @@ import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.queue.bd.MyJob;
 import org.queue.bd.airportsjob.richobjects.RichKey;
-import org.queue.bd.airportsjob.richobjects.TimeSlot;
+import utils.TimeSlot;
 import org.queue.bd.richobjects.RichSum;
 import pojos.Flight;
 

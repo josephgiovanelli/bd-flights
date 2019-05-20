@@ -15,7 +15,7 @@ import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.queue.bd.MyJob;
 import org.queue.bd.airportsjob.richobjects.RichAirport;
-import org.queue.bd.airportsjob.richobjects.TimeSlot;
+import utils.TimeSlot;
 import pojos.Airport;
 
 import java.io.IOException;

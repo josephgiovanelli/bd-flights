@@ -1,6 +1,7 @@
 package org.queue.bd.airportsjob.richobjects;
 
 import org.apache.hadoop.io.Writable;
+import utils.TimeSlot;
 
 import java.io.DataInput;
 import java.io.DataOutput;

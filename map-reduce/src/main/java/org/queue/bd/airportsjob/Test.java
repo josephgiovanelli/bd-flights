@@ -1,7 +1,5 @@
 package org.queue.bd.airportsjob;
 
-import org.queue.bd.airportsjob.richobjects.TimeSlot;
-import pojos.Airline;
 import pojos.Flight;
 
 import java.io.BufferedReader;
