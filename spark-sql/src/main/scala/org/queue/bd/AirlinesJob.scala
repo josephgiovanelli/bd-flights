@@ -37,13 +37,12 @@ object AirlinesJob {
     summarizedFlightsDF.registerTempTable("summarized_flights")
     summarizedFlightsDF.show()
 
-    val resultDF = sqlContext.sql(
+    sqlContext.sql(
       """select A.airline, SF.average_delay
         |from summarized_flights SF
-        |join airlines A on SF.airline = A.iata_code
-        |order by SF.average_delay desc""".stripMargin)
-
-    resultDF.show()
-    resultDF.write.parquet("hdfs:/user/jgiovanelli/spark-sql/airlines.parquet")
+        |join airlines A on SF.airline = A.iata_code""".stripMargin)
+      .coalesce(1)
+      .sortWithinPartitions($"average_delay".desc)
+      .write.mode("overwrite").csv("hdfs:/user/jgiovanelli/spark-sql/airlines.csv")
   }
 }
