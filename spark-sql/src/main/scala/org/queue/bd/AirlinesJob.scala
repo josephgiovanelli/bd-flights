@@ -1,7 +1,6 @@
 package org.queue.bd
 
-import org.apache.spark.sql.SQLContext
-import org.apache.spark.{SparkConf, SparkContext}
+import org.apache.spark.sql.SparkSession
 import pojos.{Airline, Flight}
 
 object AirlinesJob {
@@ -13,8 +12,9 @@ object AirlinesJob {
 
   def main(args: Array[String]): Unit = {
 
-    val sc: SparkContext = new SparkContext(new SparkConf().setAppName("Spark AirlinesJob"))
-    val sqlContext: SQLContext = new org.apache.spark.sql.SQLContext(sc)
+    val spark = SparkSession.builder().appName("Spark AirlinesJob").getOrCreate()
+    val sc = spark.sparkContext
+    val sqlContext = spark.sqlContext
     import sqlContext.implicits._
 
     val airlinesDF = sc.textFile("hdfs:/user/jgiovanelli/flights/airlines.csv")
@@ -26,15 +26,15 @@ object AirlinesJob {
       .filter(x => x.getCancelled == "0" && x.getDiverted == "0")
       .map(x => YAFlight(x.getAirline, x.getArrival_delay.toDouble)).toDF()
 
-    airlinesDF.registerTempTable("airlines")
-    flightsDF.registerTempTable("flights")
+    airlinesDF.createOrReplaceTempView("airlines")
+    flightsDF.createOrReplaceTempView("flights")
 
     val summarizedFlightsDF = sqlContext.sql(
       """select airline, avg(arrival_delay) as average_delay
         |from flights
         |group by airline""".stripMargin)
 
-    summarizedFlightsDF.registerTempTable("summarized_flights")
+    summarizedFlightsDF.createOrReplaceTempView("summarized_flights")
     summarizedFlightsDF.show()
 
     sqlContext.sql(
