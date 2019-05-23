@@ -30,7 +30,11 @@ object AirlinesJob {
       .coalesce(1)
       .cache()
 
-    rddJoined.collect()
-    rddJoined.saveAsTextFile("hdfs:/user/jgiovanelli/spark/airlines")
+    def toCSVLine(data: (String, Double)): String = data._1 + "," + data._2.toString
+
+    val rddResult = rddJoined.map(x => toCSVLine(x))
+    rddResult.collect()
+    rddResult.saveAsTextFile("hdfs:/user/jgiovanelli/spark/airlines.csv")
+
   }
 }
