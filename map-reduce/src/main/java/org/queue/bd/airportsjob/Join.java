@@ -93,7 +93,7 @@ public class Join implements MyJob {
                     context.write(new Text(second.getAirline()), new DoubleWritable(first.getAverage()));
 				}		 
 			}*/
-			richKey.set(airport + "-" + timeSlot.ordinal());
+			richKey.set(airport + "-" + timeSlot.getDescription());
             context.write(richKey, average);
         }
 	 
