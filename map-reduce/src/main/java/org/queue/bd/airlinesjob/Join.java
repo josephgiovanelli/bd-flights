@@ -25,11 +25,18 @@ import java.io.IOException;
 public class Join implements MyJob {
 
     private static final String JOB_NAME = "join";
-    private static final String FIRST_INPUT_PATH = "airlines/output1";
-    private static final String SECOND_INPUT_PATH = "flights/airlines.csv";
-    private static final String OUTPUT_PATH = "airlines/output2";
-		
-	/**
+
+    private final String firstInputPath;
+    private final String secondInputPath;
+    private final String outputPath;
+
+    public Join(final String firstInputPath, final String secondInputPath, final String outputPath) {
+        this.firstInputPath = firstInputPath;
+        this.secondInputPath = secondInputPath;
+        this.outputPath = outputPath;
+    }
+
+    /**
 	 * Mapper for Summarize job
 	 */
 	public static class FirstMapper
@@ -69,24 +76,14 @@ public class Join implements MyJob {
 
         public void reduce(Text key, Iterable<RichAirline> values, Context context)
 				throws IOException, InterruptedException {
-			
-			/*List<RichAirline> firstDatasetRecords = new ArrayList<>();
-			List<RichAirline> secondDatasetRecords = new ArrayList<>();*/
 
 			for(RichAirline val : values) {
 				if (val.isFirst()) {
-				    //firstDatasetRecords.add(val);
                     average.set(val.getAverage());
                 } else {
-				    //secondDatasetRecords.add(val);
                     airline.set(val.getAirline());
                 }
 			}
-			/*for(RichAirline first : firstDatasetRecords) {
-				for(RichAirline second : secondDatasetRecords) {
-                    context.write(new Text(second.getAirline()), new DoubleWritable(first.getAverage()));
-				}		 
-			}*/
             context.write(airline, average);
         }
 	 
@@ -98,9 +95,9 @@ public class Join implements MyJob {
         Configuration conf = new Configuration();
         Job job = Job.getInstance(conf, JOB_NAME);
 
-        Path firstInputPath = new Path(FIRST_INPUT_PATH);
-        Path secondInputPath = new Path(SECOND_INPUT_PATH);
-        Path outputPath = new Path(OUTPUT_PATH);
+        Path firstInputPath = new Path(this.firstInputPath);
+        Path secondInputPath = new Path(this.secondInputPath);
+        Path outputPath = new Path(this.outputPath);
 
         MultipleInputs.addInputPath(job, firstInputPath, KeyValueTextInputFormat.class, FirstMapper.class);
         MultipleInputs.addInputPath(job, secondInputPath, TextInputFormat.class, SecondMapper.class);

@@ -8,23 +8,22 @@ object AirportsJob {
 
 
   case class YAAirport(iata_code: String, airport: String)
-  case class YAFlight(origin_airports: String, time_slot: String, taxi_out: Double)
+  case class YAFlight(origin_airport: String, time_slot: String, taxi_out: Double)
 
 
   def main(args: Array[String]): Unit = {
 
-    val spark = SparkSession.builder().appName("Spark AirportsJob").getOrCreate()
+    val spark = SparkSession.builder().appName("SparkSQL AirportsJob").getOrCreate()
     val sc = spark.sparkContext
     val sqlContext = spark.sqlContext
     import sqlContext.implicits._
 
-    val airportsDF = sc.textFile("hdfs:/user/jgiovanelli/flights/airports.csv")
+    val airportsDF = sc.textFile("hdfs:/user/jgiovanelli/flights-dataset/clean/airports")
       .map(x => new Airport(x))
       .map(x => YAAirport(x.getIata_code, x.getAirport)).toDF()
 
-    val flightsDF = sc.textFile("hdfs:/user/jgiovanelli/flights/flights.csv")
+    val flightsDF = sc.textFile("hdfs:/user/jgiovanelli/flights-dataset/clean/flights")
       .map(x => new Flight(x))
-      .filter(x => x.getCancelled == "0" && x.getDiverted == "0")
       .map(x => YAFlight(x.getOrigin_airport, TimeSlot.getTimeSlot(x.getDeparture_time).getDescription, x.getTaxi_out.toDouble)).toDF()
 
     airportsDF.createOrReplaceTempView("airport")
@@ -40,7 +39,7 @@ object AirportsJob {
       .select("airport", "time_slot", "avg(taxi_out)")
       .repartition(1)
       .sortWithinPartitions($"avg(taxi_out)".desc)
-      .write.mode("overwrite").csv("hdfs:/user/jgiovanelli/spark-sql/airports.csv")
+      .write.mode("overwrite").csv("hdfs:/user/jgiovanelli/outputs/spark-sql/airports")
 
   }
 }

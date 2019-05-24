@@ -9,13 +9,12 @@ object AirlinesJob {
 
     val sc = new SparkContext(new SparkConf().setAppName("Spark AirlinesJob"))
 
-    val rddAirlines = sc.textFile("hdfs:/user/jgiovanelli/flights/airlines.csv")
+    val rddAirlines = sc.textFile("hdfs:/user/jgiovanelli/flights-dataset/clean/airlines")
       .map(x => new Airline(x))
       .map(x => (x.getIata_code, x.getAirline))
 
-    val rddFlights = sc.textFile("hdfs:/user/jgiovanelli/flights/flights.csv")
+    val rddFlights = sc.textFile("hdfs:/user/jgiovanelli/flights-dataset/clean/flights")
       .map(x => new Flight(x))
-      .filter(x => x.getCancelled == "0" && x.getDiverted == "0")
       .map(x => (x.getAirline, x.getArrival_delay.toDouble))
       .aggregateByKey((0.0, 0.0))((a, v) => (a._1 + v, a._2 + 1), (a1, a2) => (a1._1 + a2._1, a1._2 + a2._2))
       .map({ case (k, v) => (k, v._1 / v._2) })
@@ -34,7 +33,7 @@ object AirlinesJob {
 
     val rddResult = rddJoined.map(x => toCSVLine(x))
     rddResult.collect()
-    rddResult.saveAsTextFile("hdfs:/user/jgiovanelli/spark/airlines.csv")
+    rddResult.saveAsTextFile("hdfs:/user/jgiovanelli/outputs/spark/airlines")
 
   }
 }

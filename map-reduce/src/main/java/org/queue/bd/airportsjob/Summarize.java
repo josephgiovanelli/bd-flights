@@ -22,8 +22,14 @@ import java.io.IOException;
 public class Summarize implements MyJob {
 
     private static final String JOB_NAME = "summarize";
-    private static final String INPUT_PATH = "flights/flights.csv";
-    private static final String OUTPUT_PATH = "airports/output1";
+
+    private final String inputPath;
+    private final String outputPath;
+
+    public Summarize(final String inputPath, final String outputPath) {
+        this.inputPath = inputPath;
+        this.outputPath = outputPath;
+    }
 
     public static class SummarizeMapper
 	extends Mapper<LongWritable, Text, RichKey, RichSum>{
@@ -31,12 +37,10 @@ public class Summarize implements MyJob {
 		public void map(LongWritable key, Text value, Context context)
                 throws IOException, InterruptedException {
 			final Flight flight = new Flight(value.toString());
-			if (flight.getCancelled().equals("0") && flight.getDiverted().equals("0") && flight.getOrigin_airport().length() == 3) {
-                final RichSum richSum = new RichSum(Integer.parseInt(flight.getTaxi_out()), 1);
-                final RichKey richKey = new RichKey(flight.getOrigin_airport(),
-                        TimeSlot.getTimeSlot(flight.getScheduled_departure()));
-                context.write(richKey, richSum);
-            }
+            final RichSum richSum = new RichSum(Integer.parseInt(flight.getTaxi_out()), 1);
+            final RichKey richKey = new RichKey(flight.getOrigin_airport(),
+                    TimeSlot.getTimeSlot(flight.getScheduled_departure()));
+            context.write(richKey, richSum);
 		}
 	}
 
@@ -79,8 +83,8 @@ public class Summarize implements MyJob {
         Configuration conf = new Configuration();
         Job job = Job.getInstance(conf, JOB_NAME);
 
-        Path inputPath = new Path(INPUT_PATH);
-        Path outputPath = new Path(OUTPUT_PATH);
+        Path inputPath = new Path(this.inputPath);
+        Path outputPath = new Path(this.outputPath);
         FileSystem fs = FileSystem.get(new Configuration());
 
         if (fs.exists(outputPath)) {

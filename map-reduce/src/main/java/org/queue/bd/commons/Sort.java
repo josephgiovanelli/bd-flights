@@ -1,4 +1,4 @@
-package org.queue.bd.airlinesjob;
+package org.queue.bd.commons;
 
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.WritableComparator;
@@ -13,6 +13,7 @@ import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
+import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 import org.queue.bd.MyJob;
 
 import java.io.IOException;
@@ -24,8 +25,15 @@ import java.util.List;
 public class Sort implements MyJob {
 
     private static final String JOB_NAME = "sort";
-    private static final String INPUT_PATH = "airlines/output2";
-    private static final String OUTPUT_PATH = "airlines/output3";
+
+    private final String inputPath;
+    private final String outputPath;
+
+    public Sort(final String inputPath, final String outputPath) {
+        this.inputPath = inputPath;
+        this.outputPath = outputPath;
+    }
+
 
 	public static class SortMapper
 	extends Mapper<Text, Text, DoubleWritable, Text>{
@@ -50,8 +58,7 @@ public class Sort implements MyJob {
 				sortedValues.add(val.toString());
 			}
             Collections.sort(sortedValues);
-			//String[] sortedArray = (String[]) sortedValues.toArray();
-			//Arrays.sort(sortedArray);
+
             for (String asortedValues : sortedValues) {
                 word.set(asortedValues);
                 context.write(word, key);
@@ -82,10 +89,12 @@ public class Sort implements MyJob {
     public Job getJob() throws IOException {
 
         Configuration conf = new Configuration();
+        conf.set("mapred.textoutputformat.separatorText", ",");
+
         Job job = Job.getInstance(conf, JOB_NAME);
 
-        Path inputPath = new Path(INPUT_PATH);
-        Path outputPath = new Path(OUTPUT_PATH);
+        Path inputPath = new Path(this.inputPath);
+        Path outputPath = new Path(this.outputPath);
         FileSystem fs = FileSystem.get(new Configuration());
 
         if (fs.exists(outputPath)) {
@@ -106,6 +115,7 @@ public class Sort implements MyJob {
         job.setSortComparatorClass(IntComparator.class);
 
         job.setInputFormatClass(KeyValueTextInputFormat.class);
+        job.setOutputFormatClass(TextOutputFormat.class);
 
         FileInputFormat.addInputPath(job, inputPath);
         FileOutputFormat.setOutputPath(job, outputPath);

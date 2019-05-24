@@ -12,18 +12,17 @@ object AirlinesJob {
 
   def main(args: Array[String]): Unit = {
 
-    val spark = SparkSession.builder().appName("Spark AirlinesJob").getOrCreate()
+    val spark = SparkSession.builder().appName("SparkSQL AirlinesJob").getOrCreate()
     val sc = spark.sparkContext
     val sqlContext = spark.sqlContext
     import sqlContext.implicits._
 
-    val airlinesDF = sc.textFile("hdfs:/user/jgiovanelli/flights/airlines.csv")
+    val airlinesDF = sc.textFile("hdfs:/user/jgiovanelli/flights-dataset/clean/airlines")
       .map(x => new Airline(x))
       .map(x => YAAirline(x.getIata_code, x.getAirline)).toDF()
 
-    val flightsDF = sc.textFile("hdfs:/user/jgiovanelli/flights/flights.csv")
+    val flightsDF = sc.textFile("hdfs:/user/jgiovanelli/flights-dataset/clean/flights")
       .map(x => new Flight(x))
-      .filter(x => x.getCancelled == "0" && x.getDiverted == "0")
       .map(x => YAFlight(x.getAirline, x.getArrival_delay.toDouble)).toDF()
 
     airlinesDF.createOrReplaceTempView("airlines")
@@ -43,6 +42,6 @@ object AirlinesJob {
         |join airlines A on SF.airline = A.iata_code""".stripMargin)
       .coalesce(1)
       .sortWithinPartitions($"average_delay".desc)
-      .write.mode("overwrite").csv("hdfs:/user/jgiovanelli/spark-sql/airlines.csv")
+      .write.mode("overwrite").csv("hdfs:/user/jgiovanelli/outputs/spark-sql/airlines")
   }
 }
