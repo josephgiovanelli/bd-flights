@@ -1,9 +1,32 @@
 package org.queue.bd
 
+import org.apache.hadoop.conf.Configuration
+import org.apache.hadoop.fs.{FileSystem, Path}
+import org.apache.spark.rdd.RDD
 import org.apache.spark.{SparkConf, SparkContext}
 import pojos.{Airline, Flight}
 
 object AirlinesJob {
+
+
+
+  implicit class RichRDD[T](rDD: RDD[T]) {
+
+    def overwrite(path: String): Unit = {
+
+      def _deleteFolder(path: String): Unit = {
+        try {
+          FileSystem.get(new java.net.URI("hdfs://localhost:9000"), new Configuration())
+            .delete(new Path(path), true)
+        } catch {
+          case _: Throwable =>
+        }
+      }
+      
+      _deleteFolder(path)
+      rDD.saveAsTextFile(path)
+    }
+  }
 
   def main(args: Array[String]): Unit = {
 
@@ -33,7 +56,7 @@ object AirlinesJob {
 
     val rddResult = rddJoined.map(x => toCSVLine(x))
     rddResult.collect()
-    rddResult.saveAsTextFile("hdfs:/user/jgiovanelli/outputs/spark/airlines")
+    rddResult.overwrite("hdfs:/user/jgiovanelli/outputs/spark/airlines")
 
   }
 }
