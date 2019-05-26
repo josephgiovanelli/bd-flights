@@ -1,4 +1,4 @@
-package org.queue.bd.commons;
+package org.queue.bd.airlinesjob;
 
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.WritableComparator;
@@ -59,8 +59,8 @@ public class Sort implements MyJob {
 			}
             Collections.sort(sortedValues);
 
-            for (String asortedValues : sortedValues) {
-                word.set(asortedValues);
+            for (String sortedValue : sortedValues) {
+                word.set(sortedValue);
                 context.write(word, key);
             }
 		}

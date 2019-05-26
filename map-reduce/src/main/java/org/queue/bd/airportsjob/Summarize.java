@@ -39,7 +39,7 @@ public class Summarize implements MyJob {
 			final Flight flight = new Flight(value.toString());
             final RichSum richSum = new RichSum(Integer.parseInt(flight.getTaxi_out()), 1);
             final RichKey richKey = new RichKey(flight.getOrigin_airport(),
-                    TimeSlot.getTimeSlot(flight.getScheduled_departure()));
+                    TimeSlot.getTimeSlot(flight.getDeparture_time()));
             context.write(richKey, richSum);
 		}
 	}
@@ -94,7 +94,7 @@ public class Summarize implements MyJob {
         job.setJarByClass(Summarize.class);
         job.setMapperClass(SummarizeMapper.class);
 
-        //job.setNumReduceTasks(NUM_REDUCERS);
+        job.setNumReduceTasks(1);
 
         job.setCombinerClass(RichSumCombiner.class);
         job.setReducerClass(SummarizeReducer.class);

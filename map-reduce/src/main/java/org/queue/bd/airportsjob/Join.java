@@ -19,6 +19,8 @@ import utils.TimeSlot;
 import pojos.Airport;
 
 import java.io.IOException;
+import java.util.LinkedList;
+import java.util.List;
 
 /**
  * MapReduce job to join Summarize job and airlines.csv.
@@ -70,29 +72,30 @@ public class Join implements MyJob {
 	 * Reducer
 	 */
 	public static class JobReducer
-	    extends Reducer<Text, RichAirport, Text, DoubleWritable> {
+	    extends Reducer<Text, RichAirport, Text, Text> {
 
-
-        Text richKey = new Text();
-        DoubleWritable average = new DoubleWritable();
 
         public void reduce(Text key, Iterable<RichAirport> values, Context context)
 				throws IOException, InterruptedException {
 
-			TimeSlot timeSlot = null;
-			String airport = "";
+            String airport = "";
+            final List<RichAirport> richAirports = new LinkedList<>();
 
 			for(RichAirport val : values) {
 				if (val.isFirst()) {
-                    timeSlot = val.getTimeSlot();
-                    average.set(val.getAverage());
+				    richAirports.add(val);
                 } else {
                     airport = val.getAirport();
                 }
 			}
+			String result = "";
+            for (RichAirport richAirport: richAirports) {
+                result += richAirport.getTimeSlot() + "-" + richAirport.getAverage() + ",";
+            }
+            result = result.substring(0, result.length() - 1);
+            context.write(new Text(airport), new Text(result));
 
-			richKey.set(airport + "," + timeSlot.getDescription());
-            context.write(richKey, average);
+
         }
 	 
 	}
@@ -125,7 +128,7 @@ public class Join implements MyJob {
         job.setMapOutputValueClass(RichAirport.class);
         job.setReducerClass(JobReducer.class);
         job.setOutputKeyClass(Text.class);
-        job.setOutputValueClass(DoubleWritable.class);
+        job.setOutputValueClass(Text.class);
 
         FileOutputFormat.setOutputPath(job, outputPath);
 
