@@ -11,13 +11,7 @@ public class RichSum implements WritableComparable {
     private int sum;
     private int count;
 
-
     public RichSum() { }
-
-    public RichSum(final int sum, final int count){
-        this.sum = sum;
-        this.count = count;
-    }
 
     public int getSum() {
         return sum;
@@ -25,6 +19,11 @@ public class RichSum implements WritableComparable {
 
     public int getCount() {
         return count;
+    }
+
+    public void set(final int sum, final int count){
+        this.sum = sum;
+        this.count = count;
     }
 
     public void write(DataOutput out) throws IOException {
@@ -36,11 +35,11 @@ public class RichSum implements WritableComparable {
         count = in.readInt();
     }
 
+
     @Override
     public int compareTo(Object o){
         double presentValue = this.sum / this.count;
         double compareValue = ((RichSum) o).sum / ((RichSum) o).count;
         return Double.compare(presentValue, compareValue);
     }
-
 }

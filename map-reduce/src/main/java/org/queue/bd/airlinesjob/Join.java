@@ -42,9 +42,12 @@ public class Join implements MyJob {
 	public static class FirstMapper
     	extends Mapper<Text, Text, Text, RichAirline>{
 
+	    private final RichAirline leftRichAirline = new RichAirline();
+
 		public void map(Text key, Text value, Context context)
 				throws IOException, InterruptedException {
-		    context.write(key, new RichAirline(Double.parseDouble(value.toString())));
+		    leftRichAirline.set(Double.parseDouble(value.toString()));
+		    context.write(key, leftRichAirline);
 		}
 		
 	}
@@ -55,11 +58,16 @@ public class Join implements MyJob {
 	public static class SecondMapper
 	extends Mapper<LongWritable, Text, Text, RichAirline>{
 
+	    private final Text iataCode = new Text();
+        private final RichAirline rightRichAirline = new RichAirline();
+
         public void map(LongWritable key, Text value, Context context)
 				throws IOException, InterruptedException {
 
             Airline airline = new Airline(value.toString());
-            context.write(new Text(airline.getIata_code()), new RichAirline(airline.getAirline()));
+            iataCode.set(airline.getIata_code());
+            rightRichAirline.set(airline.getAirline());
+            context.write(iataCode, rightRichAirline);
 		}
 		
 	}
@@ -90,9 +98,11 @@ public class Join implements MyJob {
 	}
 
     @Override
-    public Job getJob() throws IOException {
+    public Job getJob(final int numReducers, final boolean lzo) throws IOException {
 
         Configuration conf = new Configuration();
+        conf.set("mapred.compress.map.output", String.valueOf(lzo));
+
         Job job = Job.getInstance(conf, JOB_NAME);
 
         Path firstInputPath = new Path(this.firstInputPath);
@@ -111,7 +121,7 @@ public class Join implements MyJob {
 
         job.setJarByClass(Join.class);
 
-        //job.setNumReduceTasks(NUM_REDUCERS);
+        //job.setNumReduceTasks(numReducers);
 
         job.setMapOutputKeyClass(Text.class);
         job.setMapOutputValueClass(RichAirline.class);

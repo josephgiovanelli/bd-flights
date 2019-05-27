@@ -34,12 +34,15 @@ public class Summarize implements MyJob {
     public static class SummarizeMapper
 	extends Mapper<LongWritable, Text, RichKey, RichSum>{
 
-		public void map(LongWritable key, Text value, Context context)
+        final RichSum richSum = new RichSum();
+        final RichKey richKey = new RichKey();
+
+        public void map(LongWritable key, Text value, Context context)
                 throws IOException, InterruptedException {
+
 			final Flight flight = new Flight(value.toString());
-            final RichSum richSum = new RichSum(Integer.parseInt(flight.getTaxi_out()), 1);
-            final RichKey richKey = new RichKey(flight.getOrigin_airport(),
-                    TimeSlot.getTimeSlot(flight.getDeparture_time()));
+            richSum.set(Integer.parseInt(flight.getTaxi_out()), 1);
+            richKey.set(flight.getOrigin_airport(), TimeSlot.getTimeSlot(flight.getDeparture_time()));
             context.write(richKey, richSum);
 		}
 	}
@@ -47,36 +50,51 @@ public class Summarize implements MyJob {
     public static class RichSumCombiner
             extends Reducer<RichKey, RichSum, RichKey, RichSum> {
 
+        final RichSum richSum = new RichSum();
+        final RichKey richKey = new RichKey();
+
         public void reduce(RichKey key, Iterable<RichSum> values, Context context)
                 throws IOException, InterruptedException {
+
             int sum = 0;
             int count = 0;
             for (RichSum value : values) {
                 sum += value.getSum();
                 count += value.getCount();
             }
-            context.write(new RichKey(key.getAirport(), key.getTimeSlot()), new RichSum(sum, count));
+            richKey.set(key.getAirport(), key.getTimeSlot());
+            richSum.set(sum, count);
+            context.write(richKey, richSum);
         }
     }
 
 	public static class SummarizeReducer
 	extends Reducer<RichKey, RichSum, Text, DoubleWritable> {
 
-		public void reduce(RichKey key, Iterable<RichSum> values, Context context)
+        private final DoubleWritable average = new DoubleWritable();
+        private final Text richKey = new Text();
+
+        public void reduce(RichKey key, Iterable<RichSum> values, Context context)
                 throws IOException, InterruptedException {
+
 			double totalSum = 0;
 			double totalCount = 0;
 			for (RichSum val : values) {
 				totalSum += val.getSum();
 				totalCount += val.getCount();
 			}
-			context.write(new Text(key.toString()), new DoubleWritable(totalSum / totalCount));
+            average.set(totalSum / totalCount);
+			richKey.set(key.toString());
+            context.write(richKey, average);
 		}
 	}
 
     @Override
-    public Job getJob() throws IOException {
+    public Job getJob(final int numReducers, final boolean lzo) throws IOException {
+
         Configuration conf = new Configuration();
+        conf.set("mapred.compress.map.output", String.valueOf(lzo));
+
         Job job = Job.getInstance(conf, JOB_NAME);
 
         Path inputPath = new Path(this.inputPath);
@@ -90,7 +108,7 @@ public class Summarize implements MyJob {
         job.setJarByClass(Summarize.class);
         job.setMapperClass(SummarizeMapper.class);
 
-        //job.setNumReduceTasks(1);
+        //job.setNumReduceTasks(numReducers);
 
         job.setCombinerClass(RichSumCombiner.class);
         job.setReducerClass(SummarizeReducer.class);

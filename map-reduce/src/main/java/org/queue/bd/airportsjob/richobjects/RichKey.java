@@ -15,7 +15,7 @@ public class RichKey implements WritableComparable {
 
     public RichKey() { }
 
-    public RichKey(final String airport, final TimeSlot timeSlot){
+    public void set(final String airport, final TimeSlot timeSlot){
         this.airport = airport;
         this.timeSlot = timeSlot;
     }

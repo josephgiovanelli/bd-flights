@@ -18,14 +18,14 @@ public class RichAirport implements Writable {
 
     public RichAirport() { }
 
-    public RichAirport(final TimeSlot timeSlot, final double average) {
+    public void set(final TimeSlot timeSlot, final double average) {
         this.first = true;
         this.timeSlot = timeSlot;
         this.average = average;
         this.airport = "";
     }
 
-    public RichAirport(final String airport) {
+    public void set(final String airport) {
         this.first = false;
         this.timeSlot = null;
         this.average = -1;

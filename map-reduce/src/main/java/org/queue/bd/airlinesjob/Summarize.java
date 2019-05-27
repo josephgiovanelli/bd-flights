@@ -1,7 +1,5 @@
 package org.queue.bd.airlinesjob;
 
-import org.apache.hadoop.mapred.OutputCollector;
-import org.apache.hadoop.mapred.Reporter;
 import org.queue.bd.MyJob;
 import org.queue.bd.richobjects.RichSum;
 import org.apache.hadoop.conf.Configuration;
@@ -18,7 +16,6 @@ import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import pojos.Flight;
 
 import java.io.IOException;
-import java.util.Iterator;
 
 public class Summarize implements MyJob {
 
@@ -35,49 +32,63 @@ public class Summarize implements MyJob {
     public static class SummarizeMapper
 	extends Mapper<LongWritable, Text, Text, RichSum>{
 
-		public void map(LongWritable key, Text value, Context context)
+        private final Text airline = new Text();
+        private final RichSum richSum = new RichSum();
+
+        public void map(LongWritable key, Text value, Context context)
                 throws IOException, InterruptedException {
+
 			final Flight flight = new Flight(value.toString());
-            final RichSum richSum = new RichSum(Integer.parseInt(flight.getArrival_delay()), 1);
-            context.write(new Text(flight.getAirline()), richSum);
+            richSum.set(Integer.parseInt(flight.getArrival_delay()), 1);
+            airline.set(flight.getAirline());
+            context.write(airline, richSum);
 		}
 	}
 
     public static class RichSumCombiner
     extends Reducer<Text, RichSum, Text, RichSum> {
 
+        private final RichSum richSum = new RichSum();
+
         public void reduce(Text key, Iterable<RichSum> values, Context context)
                 throws IOException, InterruptedException {
+
             int sum = 0;
             int count = 0;
             for (RichSum value : values) {
                 sum += value.getSum();
                 count += value.getCount();
             }
-            context.write(key, new RichSum(sum, count));
+            richSum.set(sum, count);
+            context.write(key, richSum);
         }
     }
 
 	public static class SummarizeReducer
 	extends Reducer<Text, RichSum, Text, DoubleWritable> {
-		private DoubleWritable result = new DoubleWritable();
+
+		private final DoubleWritable average = new DoubleWritable();
 
 		public void reduce(Text key, Iterable<RichSum> values, Context context)
                 throws IOException, InterruptedException {
+
 			double totalSum = 0;
 			double totalCount = 0;
 			for (RichSum val : values) {
 				totalSum += val.getSum();
 				totalCount += val.getCount();
 			}
-			result.set(totalSum / totalCount);
-			context.write(key, result);
+			average.set(totalSum / totalCount);
+			context.write(key, average);
 		}
 	}
 
     @Override
-    public Job getJob() throws IOException {
+    public Job getJob(final int numReducers, final boolean lzo) throws IOException {
+
         Configuration conf = new Configuration();
+        conf.set("mapred.compress.map.output", String.valueOf(lzo));
+
         Job job = Job.getInstance(conf, JOB_NAME);
 
         Path inputPath = new Path(this.inputPath);
@@ -91,7 +102,7 @@ public class Summarize implements MyJob {
         job.setJarByClass(Summarize.class);
         job.setMapperClass(SummarizeMapper.class);
 
-        //job.setNumReduceTasks(NUM_REDUCERS);
+        //job.setNumReduceTasks(numReducers);
 
         job.setCombinerClass(RichSumCombiner.class);
         job.setReducerClass(SummarizeReducer.class);

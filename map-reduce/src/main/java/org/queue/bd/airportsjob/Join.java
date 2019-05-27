@@ -19,7 +19,6 @@ import utils.TimeSlot;
 import pojos.Airport;
 
 import java.io.IOException;
-import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -46,12 +45,16 @@ public class Join implements MyJob {
 	public static class FirstMapper
     	extends Mapper<Text, Text, Text, RichAirport>{
 
-		public void map(Text key, Text value, Context context)
+        private final Text airportIataCode = new Text();
+        private final RichAirport leftRichAirport = new RichAirport();
+
+        public void map(Text key, Text value, Context context)
 				throws IOException, InterruptedException {
+
             final String[] richKey = key.toString().split("-");
-            Text airportIataCode = new Text(richKey[0]);
-		    context.write(airportIataCode, new RichAirport(TimeSlot.getTimeSlot(Integer.parseInt(richKey[1])),
-                    Double.parseDouble(value.toString())));
+            airportIataCode.set(richKey[0]);
+            leftRichAirport.set(TimeSlot.getTimeSlot(Integer.parseInt(richKey[1])), Double.parseDouble(value.toString()));
+		    context.write(airportIataCode, leftRichAirport);
 		}
 		
 	}
@@ -62,10 +65,16 @@ public class Join implements MyJob {
 	public static class SecondMapper
 	extends Mapper<LongWritable, Text, Text, RichAirport>{
 
+        private final Text airportIataCode = new Text();
+        private final RichAirport rightRichAirport = new RichAirport();
+
         public void map(LongWritable key, Text value, Context context)
 				throws IOException, InterruptedException {
+
             Airport airport = new Airport(value.toString());
-            context.write(new Text(airport.getIata_code()), new RichAirport(airport.getAirport()));
+            airportIataCode.set(airport.getIata_code());
+            rightRichAirport.set(airport.getAirport());
+            context.write(airportIataCode, rightRichAirport);
         }
 		
 	}
@@ -74,7 +83,10 @@ public class Join implements MyJob {
 	 * Reducer
 	 */
 	public static class JobReducer
-	    extends Reducer<Text, RichAirport, Text, Text> {
+	    extends Reducer<Text, RichAirport, Text, DoubleWritable> {
+
+	    private final Text joinedAirport = new Text();
+	    private final DoubleWritable average = new DoubleWritable();
 
         public void reduce(Text key, Iterable<RichAirport> values, Context context)
 				throws IOException, InterruptedException {
@@ -84,29 +96,32 @@ public class Join implements MyJob {
 
             for (RichAirport val : values) {
                 if (val.isFirst()) {
-                    RichAirport copy = new RichAirport(val.getTimeSlot(), val.getAverage());
+                    RichAirport copy = new RichAirport();
+                    copy.set(val.getTimeSlot(), val.getAverage());
                     richAirportsValues.add(copy);
                 } else {
-                    RichAirport copy = new RichAirport(val.getAirport());
+                    RichAirport copy = new RichAirport();
+                    copy.set(val.getAirport());
                     richAirportsKeys.add(copy);
                 }
             }
 
 			for (RichAirport richAirportKey : richAirportsKeys) {
                 for (RichAirport richAirportValue: richAirportsValues) {
-                    context.write(new Text(richAirportKey.getAirport() + "," +
-                            richAirportValue.getTimeSlot().getDescription()),
-                            new Text(String.valueOf(richAirportValue.getAverage())));
+                    joinedAirport.set(richAirportKey.getAirport() + "," + richAirportValue.getTimeSlot().getDescription());
+                    average.set(richAirportValue.getAverage());
+                    context.write(joinedAirport, average);
                 }
             }
         }
-	 
 	}
 
     @Override
-    public Job getJob() throws IOException {
+    public Job getJob(final int numReducers, final boolean lzo) throws IOException {
 
         Configuration conf = new Configuration();
+        conf.set("mapred.compress.map.output", String.valueOf(lzo));
+
         Job job = Job.getInstance(conf, JOB_NAME);
 
         Path firstInputPath = new Path(this.firstInputPath);
@@ -125,13 +140,13 @@ public class Join implements MyJob {
 
         job.setJarByClass(Join.class);
 
-        //job.setNumReduceTasks(NUM_REDUCERS);
+        //job.setNumReduceTasks(numReducers);
 
         job.setMapOutputKeyClass(Text.class);
         job.setMapOutputValueClass(RichAirport.class);
         job.setReducerClass(JobReducer.class);
         job.setOutputKeyClass(Text.class);
-        job.setOutputValueClass(Text.class);
+        job.setOutputValueClass(DoubleWritable.class);
 
         FileOutputFormat.setOutputPath(job, outputPath);
 

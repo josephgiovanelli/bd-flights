@@ -38,10 +38,10 @@ public class Sort implements MyJob {
 	public static class SortMapper
 	extends Mapper<Text, Text, DoubleWritable, Text>{
 
+        private final DoubleWritable average = new DoubleWritable();
 
 		public void map(Text key, Text value, Context context)
                 throws IOException, InterruptedException {
-		    DoubleWritable average = new DoubleWritable();
 		    average.set(Double.parseDouble(value.toString()));
 			context.write(average, key);
 		}
@@ -49,19 +49,21 @@ public class Sort implements MyJob {
 
 	public static class SortReducer
 	extends Reducer<DoubleWritable, Text, Text, DoubleWritable> {
-        private Text word = new Text();
+
+        private Text newKey = new Text();
 
 		public void reduce(DoubleWritable key, Iterable<Text> values, Context context)
                 throws IOException, InterruptedException {
-			List<String> sortedValues = new LinkedList<>();
+
+			final List<String> sortedValues = new LinkedList<>();
 			for (Text val : values) {
 				sortedValues.add(val.toString());
 			}
             Collections.sort(sortedValues);
 
             for (String sortedValue : sortedValues) {
-                word.set(sortedValue);
-                context.write(word, key);
+                newKey.set(sortedValue);
+                context.write(newKey, key);
             }
 		}
 	}
@@ -86,10 +88,11 @@ public class Sort implements MyJob {
     }
 
     @Override
-    public Job getJob() throws IOException {
+    public Job getJob(final int numReducers, final boolean lzo) throws IOException {
 
         Configuration conf = new Configuration();
         conf.set("mapred.textoutputformat.separator", ",");
+        conf.set("mapred.compress.map.output", String.valueOf(lzo));
 
         Job job = Job.getInstance(conf, JOB_NAME);
 
@@ -104,7 +107,7 @@ public class Sort implements MyJob {
         job.setJarByClass(Sort.class);
         job.setMapperClass(SortMapper.class);
 
-        job.setNumReduceTasks(1);
+        job.setNumReduceTasks(numReducers);
 
         job.setMapOutputKeyClass(DoubleWritable.class);
         job.setMapOutputValueClass(Text.class);
