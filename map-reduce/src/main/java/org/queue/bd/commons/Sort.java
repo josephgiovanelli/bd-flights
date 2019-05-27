@@ -1,4 +1,4 @@
-package org.queue.bd.airlinesjob;
+package org.queue.bd.commons;
 
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.WritableComparator;
@@ -89,7 +89,7 @@ public class Sort implements MyJob {
     public Job getJob() throws IOException {
 
         Configuration conf = new Configuration();
-        conf.set("mapred.textoutputformat.separatorText", ",");
+        conf.set("mapred.textoutputformat.separator", ",");
 
         Job job = Job.getInstance(conf, JOB_NAME);
 

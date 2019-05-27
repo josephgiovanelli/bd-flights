@@ -6,6 +6,7 @@ import utils.TimeSlot;
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
+import java.util.Objects;
 
 public class RichKey implements WritableComparable {
 
@@ -43,7 +44,7 @@ public class RichKey implements WritableComparable {
 
     @Override
     public String toString() {
-        return airport + "-" + timeSlot.getDescription();
+        return airport + "-" + timeSlot.ordinal();
     }
 
     @Override
@@ -52,5 +53,19 @@ public class RichKey implements WritableComparable {
         if (this.airport.equals(other.airport) && this.timeSlot.equals(other.timeSlot)) return 0;
         if (!this.airport.equals(other.airport)) return this.airport.compareTo(other.airport);
         else return this.timeSlot.compareTo(other.timeSlot);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        RichKey richKey = (RichKey) o;
+        return Objects.equals(airport, richKey.airport) &&
+                timeSlot == richKey.timeSlot;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(airport, timeSlot.ordinal());
     }
 }

@@ -9,7 +9,7 @@ import java.io.DataOutput;
 import java.io.IOException;
 import java.util.Objects;
 
-public class RichAirport implements WritableComparable {
+public class RichAirport implements Writable {
 
     private boolean first;
     private TimeSlot timeSlot;
@@ -51,8 +51,7 @@ public class RichAirport implements WritableComparable {
     public void write(DataOutput out) throws IOException {
         out.writeBoolean(first);
         if(first) {
-            out.writeInt(timeSlot.getDescription().length());
-            out.writeChars(timeSlot.getDescription());
+            out.writeInt(timeSlot.ordinal());
             out.writeDouble(average);
         } else {
             out.writeInt(airport.length());
@@ -63,12 +62,7 @@ public class RichAirport implements WritableComparable {
     public void readFields(DataInput in) throws IOException {
         first = in.readBoolean();
         if (first) {
-            String timeSlotDescription = "";
-            final int timeSlotDescriptionLength = in.readInt();
-            for (int i = 0; i < timeSlotDescriptionLength; i++) {
-                timeSlotDescription = timeSlotDescription + in.readChar();
-            }
-            timeSlot = TimeSlot.getTimeSlotFromDescription(timeSlotDescription);
+            timeSlot = TimeSlot.getTimeSlot(in.readInt());
             average = in.readDouble();
             airport = "";
         } else {
@@ -80,32 +74,5 @@ public class RichAirport implements WritableComparable {
                 airport = airport + in.readChar();
             }
         }
-    }
-
-    @Override
-    public int compareTo(Object o) {
-        RichAirport other = (RichAirport) o;
-        if(this.first && other.first) {
-            return Double.compare(this.average, other.average);
-        } else if(!this.first && !other.first) {
-            return this.airport.compareTo(other.airport);
-        }
-        return 0;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        RichAirport that = (RichAirport) o;
-        return first == that.first &&
-                Double.compare(that.average, average) == 0 &&
-                timeSlot == that.timeSlot &&
-                Objects.equals(airport, that.airport);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(first, timeSlot, average, airport);
     }
 }

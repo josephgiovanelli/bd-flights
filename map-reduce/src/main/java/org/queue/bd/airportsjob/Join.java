@@ -46,17 +46,12 @@ public class Join implements MyJob {
 	public static class FirstMapper
     	extends Mapper<Text, Text, Text, RichAirport>{
 
-        private Text newKey = new Text();
-        //private Text newValue = new Text();
-
 		public void map(Text key, Text value, Context context)
 				throws IOException, InterruptedException {
             final String[] richKey = key.toString().split("-");
-            newKey.set(richKey[0]);
-            //newValue.set("0;" + richKey[1] + "-" + value.toString());
-		    context.write(newKey, new RichAirport(TimeSlot.getTimeSlotFromDescription(richKey[1]), Double.parseDouble(value.toString())));
-		    newKey.clear();
-		    //newValue.clear();
+            Text airportIataCode = new Text(richKey[0]);
+		    context.write(airportIataCode, new RichAirport(TimeSlot.getTimeSlot(Integer.parseInt(richKey[1])),
+                    Double.parseDouble(value.toString())));
 		}
 		
 	}
@@ -67,17 +62,10 @@ public class Join implements MyJob {
 	public static class SecondMapper
 	extends Mapper<LongWritable, Text, Text, RichAirport>{
 
-        private Text newKey = new Text();
-        //private Text newValue = new Text();
-
         public void map(LongWritable key, Text value, Context context)
 				throws IOException, InterruptedException {
             Airport airport = new Airport(value.toString());
-            newKey.set(airport.getIata_code());
-            //newValue.set("1;" + airport.getAirport());
-            context.write(newKey, new RichAirport(airport.getAirport()));
-            newKey.clear();
-            //newValue.clear();
+            context.write(new Text(airport.getIata_code()), new RichAirport(airport.getAirport()));
         }
 		
 	}
@@ -88,64 +76,29 @@ public class Join implements MyJob {
 	public static class JobReducer
 	    extends Reducer<Text, RichAirport, Text, Text> {
 
-        private Text newKey = new Text();
-        private Text newValue = new Text();
-
-
         public void reduce(Text key, Iterable<RichAirport> values, Context context)
 				throws IOException, InterruptedException {
 
-            String airport = "";
-            /*List<String> richAirports = new LinkedList<>();
-            for (Text value : values) {
-                String[] richAirport = value.toString().split(";");
-                if (richAirport[0].equals("1")) {
-                    airport = richAirport[1];
-                } else {
-                    richAirports.add(richAirport[1]);
-                }
-            }*/
             final List<RichAirport> richAirportsValues = new LinkedList<>();
             final List<RichAirport> richAirportsKeys = new LinkedList<>();
 
-            Iterator<RichAirport> temps = values.iterator();
-            while (temps.hasNext()) {
-                RichAirport val = temps.next();
+            for (RichAirport val : values) {
                 if (val.isFirst()) {
                     RichAirport copy = new RichAirport(val.getTimeSlot(), val.getAverage());
                     richAirportsValues.add(copy);
                 } else {
-                    RichAirport copy = new RichAirport(new String(val.getAirport()));
+                    RichAirport copy = new RichAirport(val.getAirport());
                     richAirportsKeys.add(copy);
-                    //newKey.set(copy.getAirport());
                 }
             }
 
-			//StringBuilder result = new StringBuilder();
-			/*for(String YArichAirport : richAirports) {
-                //result.append(richAirport).append(",");
-                newKey.set(airport);
-                newValue.set(YArichAirport);
-                context.write(newKey, newValue);
-            }*/
 			for (RichAirport richAirportKey : richAirportsKeys) {
                 for (RichAirport richAirportValue: richAirportsValues) {
-                    //result.append(richAirport.getTimeSlot()).append("-").append(richAirport.getAverage());
-                    //newValue.set(result.toString());
-                    context.write(new Text(richAirportKey.getAirport()), new Text(richAirportValue.getTimeSlot().getDescription() + "-" + String.valueOf(richAirportValue.getAverage())));
-                    //newKey.clear();
-                    //newValue.clear();
+                    context.write(new Text(richAirportKey.getAirport() + "," +
+                            richAirportValue.getTimeSlot().getDescription()),
+                            new Text(String.valueOf(richAirportValue.getAverage())));
                 }
             }
-
-            /*result = new StringBuilder(new StringBuilder(result.substring(0, result.length() - 1)));
-            newKey.set(airport);
-            newValue.set(result.toString());
-            context.write(newKey, newValue);
-            newKey.clear();
-            newValue.clear();*/
-
-
         }
 	 
 	}

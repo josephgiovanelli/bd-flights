@@ -1,6 +1,7 @@
 package org.queue.bd.airportsjob;
 
 import org.apache.hadoop.mapreduce.Job;
+import org.queue.bd.commons.Sort;
 
 import java.util.ArrayList;
 
