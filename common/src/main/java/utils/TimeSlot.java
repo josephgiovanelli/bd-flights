@@ -25,6 +25,16 @@ public enum TimeSlot {
         return TimeSlot.EVENING;
     }
 
+    public static TimeSlot getTimeSlotFromDescription(final String description) {
+        switch (description) {
+            case "Morning": return TimeSlot.MORNING;
+            case "Afternoon": return TimeSlot.AFTERNOON;
+            case "Evening": return TimeSlot.EVENING;
+            case "Night": return TimeSlot.NIGHT;
+            default: return TimeSlot.MORNING;
+        }
+    }
+
     public static TimeSlot getTimeSlot(final int ordinal) {
         return TimeSlot.values()[ordinal];
     }

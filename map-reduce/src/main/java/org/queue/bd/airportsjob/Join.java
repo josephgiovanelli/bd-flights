@@ -19,6 +19,7 @@ import utils.TimeSlot;
 import pojos.Airport;
 
 import java.io.IOException;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -43,19 +44,19 @@ public class Join implements MyJob {
 	 * Mapper for Summarize job
 	 */
 	public static class FirstMapper
-    	extends Mapper<Text, Text, Text, Text>{
+    	extends Mapper<Text, Text, Text, RichAirport>{
 
         private Text newKey = new Text();
-        private Text newValue = new Text();
+        //private Text newValue = new Text();
 
 		public void map(Text key, Text value, Context context)
 				throws IOException, InterruptedException {
             final String[] richKey = key.toString().split("-");
             newKey.set(richKey[0]);
-            newValue.set("0;" + richKey[1] + "-" + value.toString());
-		    context.write(newKey, newValue);
+            //newValue.set("0;" + richKey[1] + "-" + value.toString());
+		    context.write(newKey, new RichAirport(TimeSlot.getTimeSlotFromDescription(richKey[1]), Double.parseDouble(value.toString())));
 		    newKey.clear();
-		    newValue.clear();
+		    //newValue.clear();
 		}
 		
 	}
@@ -64,19 +65,19 @@ public class Join implements MyJob {
 	 * Mapper for airlines dataset
 	 */
 	public static class SecondMapper
-	extends Mapper<LongWritable, Text, Text, Text>{
+	extends Mapper<LongWritable, Text, Text, RichAirport>{
 
         private Text newKey = new Text();
-        private Text newValue = new Text();
+        //private Text newValue = new Text();
 
         public void map(LongWritable key, Text value, Context context)
 				throws IOException, InterruptedException {
             Airport airport = new Airport(value.toString());
             newKey.set(airport.getIata_code());
-            newValue.set("1;" + airport.getAirport());
-            context.write(newKey, newValue);
+            //newValue.set("1;" + airport.getAirport());
+            context.write(newKey, new RichAirport(airport.getAirport()));
             newKey.clear();
-            newValue.clear();
+            //newValue.clear();
         }
 		
 	}
@@ -85,17 +86,17 @@ public class Join implements MyJob {
 	 * Reducer
 	 */
 	public static class JobReducer
-	    extends Reducer<Text, Text, Text, Text> {
+	    extends Reducer<Text, RichAirport, Text, Text> {
 
         private Text newKey = new Text();
         private Text newValue = new Text();
 
 
-        public void reduce(Text key, Iterable<Text> values, Context context)
+        public void reduce(Text key, Iterable<RichAirport> values, Context context)
 				throws IOException, InterruptedException {
 
             String airport = "";
-            List<String> richAirports = new LinkedList<>();
+            /*List<String> richAirports = new LinkedList<>();
             for (Text value : values) {
                 String[] richAirport = value.toString().split(";");
                 if (richAirport[0].equals("1")) {
@@ -103,27 +104,41 @@ public class Join implements MyJob {
                 } else {
                     richAirports.add(richAirport[1]);
                 }
-            }
-            //final List<RichAirport> richAirports = new LinkedList<>();
+            }*/
+            final List<RichAirport> richAirportsValues = new LinkedList<>();
+            final List<RichAirport> richAirportsKeys = new LinkedList<>();
 
-			/*for(RichAirport val : values) {
-				if (val.isFirst()) {
-				    richAirports.add(val);
+            Iterator<RichAirport> temps = values.iterator();
+            while (temps.hasNext()) {
+                RichAirport val = temps.next();
+                if (val.isFirst()) {
+                    RichAirport copy = new RichAirport(val.getTimeSlot(), val.getAverage());
+                    richAirportsValues.add(copy);
                 } else {
-                    airport = val.getAirport();
+                    RichAirport copy = new RichAirport(new String(val.getAirport()));
+                    richAirportsKeys.add(copy);
+                    //newKey.set(copy.getAirport());
                 }
-			}*/
-			StringBuilder result = new StringBuilder();
-			for(String YArichAirport : richAirports) {
+            }
+
+			//StringBuilder result = new StringBuilder();
+			/*for(String YArichAirport : richAirports) {
                 //result.append(richAirport).append(",");
                 newKey.set(airport);
                 newValue.set(YArichAirport);
                 context.write(newKey, newValue);
-            }
-            /*for (RichAirport richAirport: richAirports) {
-                result += richAirport.getTimeSlot() + "-" + richAirport.getAverage() + ",";
             }*/
-            /*result = new StringBuilder(result.substring(0, result.length() - 1));
+			for (RichAirport richAirportKey : richAirportsKeys) {
+                for (RichAirport richAirportValue: richAirportsValues) {
+                    //result.append(richAirport.getTimeSlot()).append("-").append(richAirport.getAverage());
+                    //newValue.set(result.toString());
+                    context.write(new Text(richAirportKey.getAirport()), new Text(richAirportValue.getTimeSlot().getDescription() + "-" + String.valueOf(richAirportValue.getAverage())));
+                    //newKey.clear();
+                    //newValue.clear();
+                }
+            }
+
+            /*result = new StringBuilder(new StringBuilder(result.substring(0, result.length() - 1)));
             newKey.set(airport);
             newValue.set(result.toString());
             context.write(newKey, newValue);
@@ -160,7 +175,7 @@ public class Join implements MyJob {
         //job.setNumReduceTasks(NUM_REDUCERS);
 
         job.setMapOutputKeyClass(Text.class);
-        job.setMapOutputValueClass(Text.class);
+        job.setMapOutputValueClass(RichAirport.class);
         job.setReducerClass(JobReducer.class);
         job.setOutputKeyClass(Text.class);
         job.setOutputValueClass(Text.class);
