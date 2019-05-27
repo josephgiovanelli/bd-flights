@@ -43,7 +43,7 @@ public class RichKey implements WritableComparable {
 
     @Override
     public String toString() {
-        return airport + "-" + timeSlot.ordinal();
+        return airport + "-" + timeSlot.getDescription();
     }
 
     @Override

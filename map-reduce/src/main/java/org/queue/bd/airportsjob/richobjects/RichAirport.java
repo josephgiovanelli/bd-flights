@@ -73,4 +73,10 @@ public class RichAirport implements Writable {
             }
         }
     }
+
+    public void clear() {
+        timeSlot = null;
+        average = -1;
+        airport = "";
+    }
 }
