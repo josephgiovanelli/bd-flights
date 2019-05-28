@@ -101,7 +101,7 @@ public class Join implements MyJob {
     public Job getJob(final int numReducers, final boolean lzo) throws IOException {
 
         Configuration conf = new Configuration();
-        conf.set("mapred.compress.map.output", String.valueOf(lzo));
+        conf.set("mapreduce.map.output.compress", String.valueOf(lzo));
 
         Job job = Job.getInstance(conf, JOB_NAME);
 
@@ -121,7 +121,7 @@ public class Join implements MyJob {
 
         job.setJarByClass(Join.class);
 
-        //job.setNumReduceTasks(numReducers);
+        job.setNumReduceTasks(numReducers);
 
         job.setMapOutputKeyClass(Text.class);
         job.setMapOutputValueClass(RichAirline.class);

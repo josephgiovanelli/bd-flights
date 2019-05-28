@@ -93,7 +93,7 @@ public class Summarize implements MyJob {
     public Job getJob(final int numReducers, final boolean lzo) throws IOException {
 
         Configuration conf = new Configuration();
-        conf.set("mapred.compress.map.output", String.valueOf(lzo));
+        conf.set("mapreduce.map.output.compress", String.valueOf(lzo));
 
         Job job = Job.getInstance(conf, JOB_NAME);
 
@@ -108,7 +108,7 @@ public class Summarize implements MyJob {
         job.setJarByClass(Summarize.class);
         job.setMapperClass(SummarizeMapper.class);
 
-        //job.setNumReduceTasks(numReducers);
+        job.setNumReduceTasks(numReducers);
 
         job.setCombinerClass(RichSumCombiner.class);
         job.setReducerClass(SummarizeReducer.class);

@@ -91,8 +91,8 @@ public class Sort implements MyJob {
     public Job getJob(final int numReducers, final boolean lzo) throws IOException {
 
         Configuration conf = new Configuration();
-        conf.set("mapred.textoutputformat.separator", ",");
-        conf.set("mapred.compress.map.output", String.valueOf(lzo));
+        conf.set("mapreduce.output.textoutputformat.separator", ",");
+        conf.set("mapreduce.map.output.compress", String.valueOf(lzo));
 
         Job job = Job.getInstance(conf, JOB_NAME);
 

@@ -14,8 +14,8 @@ public class AirlinesJob {
 
 	    final ArrayList<Job> jobs = new ArrayList<>();
 
-		jobs.add(new Summarize("flights-dataset/clean/flights", "outputs/map-reduce/airlines/output1").getJob(10, true));
-		jobs.add(new Join("outputs/map-reduce/airlines/output1", "flights-dataset/clean/airlines", "outputs/map-reduce/airlines/output2").getJob(10, false));
+		jobs.add(new Summarize("flights-dataset/clean/flights", "outputs/map-reduce/airlines/output1").getJob(5, true));
+		jobs.add(new Join("outputs/map-reduce/airlines/output1", "flights-dataset/clean/airlines", "outputs/map-reduce/airlines/output2").getJob(5, false));
 		jobs.add(new Sort("outputs/map-reduce/airlines/output2", "outputs/map-reduce/airlines/output3").getJob(1, false));
 
 
