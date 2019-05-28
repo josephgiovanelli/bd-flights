@@ -1,8 +1,8 @@
-package org.queue.bd.commons;
+package org.queue.bd.airportsjob;
 
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.WritableComparator;
-import org.apache.hadoop.mapreduce.lib.input.KeyValueTextInputFormat;
+import org.apache.hadoop.io.compress.SnappyCodec;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -12,6 +12,7 @@ import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
+import org.apache.hadoop.mapreduce.lib.input.SequenceFileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 import org.queue.bd.MyJob;
@@ -36,14 +37,11 @@ public class Sort implements MyJob {
 
 
 	public static class SortMapper
-	extends Mapper<Text, Text, DoubleWritable, Text>{
+	extends Mapper<Text, DoubleWritable, DoubleWritable, Text>{
 
-        private final DoubleWritable average = new DoubleWritable();
-
-		public void map(Text key, Text value, Context context)
+		public void map(Text key, DoubleWritable value, Context context)
                 throws IOException, InterruptedException {
-		    average.set(Double.parseDouble(value.toString()));
-			context.write(average, key);
+			context.write(value, key);
 		}
 	}
 
@@ -88,11 +86,11 @@ public class Sort implements MyJob {
     }
 
     @Override
-    public Job getJob(final int numReducers, final boolean lzo) throws IOException {
+    public Job getJob(final int numReducers, final boolean mapOutputCompression, final boolean reduceOutputCompression) throws IOException {
 
         Configuration conf = new Configuration();
         conf.set("mapreduce.output.textoutputformat.separator", ",");
-        conf.set("mapreduce.map.output.compress", String.valueOf(lzo));
+        conf.set("mapreduce.map.output.compress", String.valueOf(mapOutputCompression));
 
         Job job = Job.getInstance(conf, JOB_NAME);
 
@@ -117,8 +115,13 @@ public class Sort implements MyJob {
 
         job.setSortComparatorClass(IntComparator.class);
 
-        job.setInputFormatClass(KeyValueTextInputFormat.class);
+        job.setInputFormatClass(SequenceFileInputFormat.class);
         job.setOutputFormatClass(TextOutputFormat.class);
+
+        if (reduceOutputCompression) {
+            FileOutputFormat.setCompressOutput(job, reduceOutputCompression);
+            FileOutputFormat.setOutputCompressorClass(job, SnappyCodec.class);
+        }
 
         FileInputFormat.addInputPath(job, inputPath);
         FileOutputFormat.setOutputPath(job, outputPath);

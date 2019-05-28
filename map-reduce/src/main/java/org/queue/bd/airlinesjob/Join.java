@@ -1,6 +1,9 @@
 package org.queue.bd.airlinesjob;
 
+import org.apache.hadoop.io.compress.SnappyCodec;
+import org.apache.hadoop.mapreduce.lib.input.SequenceFileInputFormat;
 import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
+import org.apache.hadoop.mapreduce.lib.output.SequenceFileOutputFormat;
 import org.queue.bd.MyJob;
 import org.queue.bd.airlinesjob.richobjects.RichAirline;
 import org.apache.hadoop.conf.Configuration;
@@ -98,10 +101,10 @@ public class Join implements MyJob {
 	}
 
     @Override
-    public Job getJob(final int numReducers, final boolean lzo) throws IOException {
+    public Job getJob(final int numReducers, final boolean mapOutputCompression, final boolean reduceOutputCompression) throws IOException {
 
         Configuration conf = new Configuration();
-        conf.set("mapreduce.map.output.compress", String.valueOf(lzo));
+        conf.set("mapreduce.map.output.compress", String.valueOf(mapOutputCompression));
 
         Job job = Job.getInstance(conf, JOB_NAME);
 
@@ -128,6 +131,12 @@ public class Join implements MyJob {
         job.setReducerClass(JobReducer.class);
         job.setOutputKeyClass(Text.class);
         job.setOutputValueClass(DoubleWritable.class);
+
+
+        if (reduceOutputCompression) {
+            FileOutputFormat.setCompressOutput(job, reduceOutputCompression);
+            FileOutputFormat.setOutputCompressorClass(job, SnappyCodec.class);
+        }
 
         FileOutputFormat.setOutputPath(job, outputPath);
 

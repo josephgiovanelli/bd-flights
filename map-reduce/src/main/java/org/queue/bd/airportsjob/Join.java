@@ -6,13 +6,16 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.DoubleWritable;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
+import org.apache.hadoop.io.compress.SnappyCodec;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.hadoop.mapreduce.lib.input.KeyValueTextInputFormat;
 import org.apache.hadoop.mapreduce.lib.input.MultipleInputs;
+import org.apache.hadoop.mapreduce.lib.input.SequenceFileInputFormat;
 import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
+import org.apache.hadoop.mapreduce.lib.output.SequenceFileOutputFormat;
 import org.queue.bd.MyJob;
 import org.queue.bd.airportsjob.richobjects.RichAirport;
 import utils.TimeSlot;
@@ -43,17 +46,17 @@ public class Join implements MyJob {
 	 * Mapper for Summarize job
 	 */
 	public static class FirstMapper
-    	extends Mapper<Text, Text, Text, RichAirport>{
+    	extends Mapper<Text, DoubleWritable, Text, RichAirport>{
 
         private final Text airportIataCode = new Text();
         private final RichAirport leftRichAirport = new RichAirport();
 
-        public void map(Text key, Text value, Context context)
+        public void map(Text key, DoubleWritable value, Context context)
 				throws IOException, InterruptedException {
 
             final String[] richKey = key.toString().split("-");
             airportIataCode.set(richKey[0]);
-            leftRichAirport.set(TimeSlot.getTimeSlot(Integer.parseInt(richKey[1])), Double.parseDouble(value.toString()));
+            leftRichAirport.set(TimeSlot.getTimeSlot(Integer.parseInt(richKey[1])), value.get());
 		    context.write(airportIataCode, leftRichAirport);
 		}
 		
@@ -117,10 +120,10 @@ public class Join implements MyJob {
 	}
 
     @Override
-    public Job getJob(final int numReducers, final boolean lzo) throws IOException {
+    public Job getJob(final int numReducers, final boolean mapOutputCompression, final boolean reduceOutputCompression) throws IOException {
 
         Configuration conf = new Configuration();
-        conf.set("mapreduce.map.output.compress", String.valueOf(lzo));
+        conf.set("mapreduce.map.output.compress", String.valueOf(mapOutputCompression));
 
         Job job = Job.getInstance(conf, JOB_NAME);
 
@@ -128,7 +131,7 @@ public class Join implements MyJob {
         Path secondInputPath = new Path(this.secondInputPath);
         Path outputPath = new Path(this.outputPath);
 
-        MultipleInputs.addInputPath(job, firstInputPath, KeyValueTextInputFormat.class, FirstMapper.class);
+        MultipleInputs.addInputPath(job, firstInputPath, SequenceFileInputFormat.class, FirstMapper.class);
         MultipleInputs.addInputPath(job, secondInputPath, TextInputFormat.class, SecondMapper.class);
 
 
@@ -147,6 +150,13 @@ public class Join implements MyJob {
         job.setReducerClass(JobReducer.class);
         job.setOutputKeyClass(Text.class);
         job.setOutputValueClass(DoubleWritable.class);
+
+        job.setOutputFormatClass(SequenceFileOutputFormat.class);
+
+        if (reduceOutputCompression) {
+            FileOutputFormat.setCompressOutput(job, reduceOutputCompression);
+            FileOutputFormat.setOutputCompressorClass(job, SnappyCodec.class);
+        }
 
         FileOutputFormat.setOutputPath(job, outputPath);
 
