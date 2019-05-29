@@ -1,6 +1,7 @@
 package org.queue.bd.airlinesjob;
 
 import org.apache.hadoop.mapreduce.Job;
+import org.queue.bd.commons.Sort;
 
 import java.util.ArrayList;
 
@@ -16,12 +17,12 @@ public class AirlinesJob {
 		jobs.add(new Summarize(
 				"flights-dataset/clean/flights",
 				"outputs/map-reduce/airlines/output1")
-                .getJob(5, false, false));
+                .getJob(10, false, false));
 		jobs.add(new Join(
 		        "outputs/map-reduce/airlines/output1",
                 "flights-dataset/clean/airlines",
                 "outputs/map-reduce/airlines/output2")
-                .getJob(5, false, false));
+                .getJob(10, false, false));
 		jobs.add(new Sort(
 		        "outputs/map-reduce/airlines/output2",
                 "outputs/map-reduce/airlines/output3")

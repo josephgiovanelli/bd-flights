@@ -43,13 +43,13 @@ public class Join implements MyJob {
 	 * Mapper for Summarize job
 	 */
 	public static class FirstMapper
-    	extends Mapper<Text, Text, Text, RichAirline>{
+    	extends Mapper<Text, DoubleWritable, Text, RichAirline>{
 
 	    private final RichAirline leftRichAirline = new RichAirline();
 
-		public void map(Text key, Text value, Context context)
+		public void map(Text key, DoubleWritable value, Context context)
 				throws IOException, InterruptedException {
-		    leftRichAirline.set(Double.parseDouble(value.toString()));
+		    leftRichAirline.set(value.get());
 		    context.write(key, leftRichAirline);
 		}
 		
@@ -112,7 +112,7 @@ public class Join implements MyJob {
         Path secondInputPath = new Path(this.secondInputPath);
         Path outputPath = new Path(this.outputPath);
 
-        MultipleInputs.addInputPath(job, firstInputPath, KeyValueTextInputFormat.class, FirstMapper.class);
+        MultipleInputs.addInputPath(job, firstInputPath, SequenceFileInputFormat.class, FirstMapper.class);
         MultipleInputs.addInputPath(job, secondInputPath, TextInputFormat.class, SecondMapper.class);
 
 
@@ -132,6 +132,7 @@ public class Join implements MyJob {
         job.setOutputKeyClass(Text.class);
         job.setOutputValueClass(DoubleWritable.class);
 
+        job.setOutputFormatClass(SequenceFileOutputFormat.class);
 
         if (reduceOutputCompression) {
             FileOutputFormat.setCompressOutput(job, reduceOutputCompression);

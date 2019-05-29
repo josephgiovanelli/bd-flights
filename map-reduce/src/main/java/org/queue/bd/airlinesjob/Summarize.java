@@ -114,6 +114,8 @@ public class Summarize implements MyJob {
         job.setOutputKeyClass(Text.class);
         job.setOutputValueClass(DoubleWritable.class);
 
+        job.setOutputFormatClass(SequenceFileOutputFormat.class);
+
         if (reduceOutputCompression) {
             FileOutputFormat.setCompressOutput(job, reduceOutputCompression);
             FileOutputFormat.setOutputCompressorClass(job, SnappyCodec.class);

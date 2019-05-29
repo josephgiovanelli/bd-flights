@@ -1,4 +1,4 @@
-package org.queue.bd.airportsjob;
+package org.queue.bd.commons;
 
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.WritableComparator;
