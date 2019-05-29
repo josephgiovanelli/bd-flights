@@ -3,6 +3,8 @@ package org.queue.bd
 import org.apache.spark.{SparkConf, SparkContext}
 import pojos.{Airport, Flight}
 import utils.TimeSlot
+import org.queue.bd.RDDUtils._
+
 
 object AirportsJob {
 
@@ -30,6 +32,6 @@ object AirportsJob {
 
     val rddResult = rddFlights.map(x => toCSVLine(x))
     rddResult.collect()
-    rddResult.saveAsTextFile("hdfs:/user/jgiovanelli/outputs/spark/airports")
+    rddResult.overwrite("hdfs:/user/jgiovanelli/outputs/spark/airports")
   }
 }
