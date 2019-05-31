@@ -1,34 +1,19 @@
 package org.queue.bd
 
 import org.apache.spark.{HashPartitioner, SparkConf, SparkContext}
+import org.queue.bd.RDDUtils._
 import pojos.{Airport, Flight}
 import utils.TimeSlot
-import org.queue.bd.RDDUtils._
 
-import org.apache.spark.Partitioner
 
-class CustomPartitioner(numberOfPartitioner: Int) extends Partitioner {
-  override def numPartitions: Int = numberOfPartitioner
-  override def getPartition(key: Any): Int = {
-    Math.abs(key.asInstanceOf[(String, TimeSlot)]._1.hashCode() % numPartitions)
-  }
-  // Java equals method to let Spark compare our Partitioner objects
-  override def equals(other: Any): Boolean = other match {
-    case partitioner: CustomPartitioner =>
-      partitioner.numPartitions == numPartitions
-    case _ =>
-      false
-  }
-}
-
-object AirportsJob {
+object Airports4Job {
 
   def toCSVLine(data: ((String, TimeSlot), Double)): String =
     data._1._1 + "," + data._1._2.getDescription + "," + data._2.toString
 
   def main(args: Array[String]): Unit = {
 
-    val sc = new SparkContext(new SparkConf().setAppName("Spark AirportsJob"))
+    val sc = new SparkContext(new SparkConf().setAppName("Spark Airports4Job"))
 
     val rddAirports = sc.textFile("hdfs:/user/jgiovanelli/flights-dataset/clean/airports")
       .map(x => new Airport(x))
@@ -49,6 +34,6 @@ object AirportsJob {
     rddResult.collect()
 
     rddResult.map(x => toCSVLine(x))
-             .overwrite("hdfs:/user/jgiovanelli/outputs/spark/airports")
+      .overwrite("hdfs:/user/jgiovanelli/outputs/spark/airports")
   }
 }
