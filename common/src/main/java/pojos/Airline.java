@@ -1,5 +1,8 @@
 package pojos;
 
+/**
+ * Pojo class to store an airline information
+ */
 public class Airline {
 
     private final String iata_code;

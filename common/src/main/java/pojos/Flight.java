@@ -1,5 +1,8 @@
 package pojos;
 
+/**
+ * Pojo class to store information related to a give flight
+ */
 public class Flight {
 
     private final String year;
