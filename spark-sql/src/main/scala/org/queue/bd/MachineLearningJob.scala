@@ -3,7 +3,7 @@ package org.queue.bd
 import java.io.PrintWriter
 
 import org.apache.hadoop.fs.{FileSystem, Path}
-import org.apache.spark.ml.classification.DecisionTreeClassificationModel
+import org.apache.spark.ml.classification.{DecisionTreeClassificationModel, LogisticRegression}
 import org.apache.spark.sql.SparkSession
 import utils.TimeSlot
 
@@ -87,13 +87,19 @@ object MachineLearningJob {
       .setMaxDepth(5)
       .setMaxBins(350)
 
+    val lr = new LogisticRegression().setMaxIter(10)
+
     dt.setFeaturesCol("features")
+      .setLabelCol("DelayIndex")
+
+    lr.setFeaturesCol("features")
       .setLabelCol("DelayIndex")
 
     import org.apache.spark.ml.Pipeline
 
     val pipelineDt = new Pipeline()
-      .setStages(Array(airlineInd, airportInd, timeSlotInd, delayInd, assembler, dt))
+      //.setStages(Array(airlineInd, airportInd, timeSlotInd, delayInd, assembler, dt))
+      .setStages(Array(airlineInd, airportInd, timeSlotInd, delayInd, assembler, lr))
 
     // Training
 
@@ -158,7 +164,7 @@ object MachineLearningJob {
 
     println("Area under ROC curve (Test): " + testMetrics.areaUnderROC())
 
-    val treeModel = model.stages(5).asInstanceOf[DecisionTreeClassificationModel]
+    /*val treeModel = model.stages(5).asInstanceOf[DecisionTreeClassificationModel]
     val debugDecisionTree = treeModel.toDebugString
     println("Learned classification tree model:\n" + debugDecisionTree)
     val modelFile = "hdfs:/user/jgiovanelli/outputs/spark-sql/machine-learning.txt"
@@ -175,6 +181,6 @@ object MachineLearningJob {
     }
     finally {
       writer.close()
-    }
+    }*/
   }
 }
