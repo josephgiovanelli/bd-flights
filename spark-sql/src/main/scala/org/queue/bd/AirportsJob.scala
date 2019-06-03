@@ -24,7 +24,7 @@ object AirportsJob {
 
     val flightsDF = sc.textFile("hdfs:/user/jgiovanelli/flights-dataset/clean/flights")
       .map(x => new Flight(x))
-      .map(x => YAFlight(x.getOrigin_airport, TimeSlot.getTimeSlot(x.getDeparture_time).getDescription, x.getTaxi_out.toDouble)).toDF()
+      .map(x => YAFlight(x.getOrigin_airport, TimeSlot.getTimeSlot(x.getScheduled_departure).getDescription, x.getTaxi_out.toDouble)).toDF()
 
     airportsDF.createOrReplaceTempView("airport")
     flightsDF.createOrReplaceTempView("flights")

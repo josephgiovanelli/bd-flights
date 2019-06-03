@@ -37,8 +37,7 @@ object ThirdJob {
       .map({ case (k, v) => (broadcastRddAirlines.value.get(k), v) })
       .filter(_._1.isDefined)
       .map({ case (k, v) => (k.get, v) })
-      .sortBy(_._2, ascending = false)
-      .coalesce(1)
+      .sortBy(_._2, ascending = false, numPartitions = 1)
       .cache()
 
     def toCSVLineForAirlines(data: (String, Double)): String = data._1 + "," + data._2.toString
@@ -49,22 +48,25 @@ object ThirdJob {
 
     //Airports Part
     val rddFlightsForAirports = rddCommonFlights
-      .map(x => ((x.getOrigin_airport, TimeSlot.getTimeSlot(x.getDeparture_time)), x.getTaxi_out.toDouble))
+      .map(x => ((x.getOrigin_airport, TimeSlot.getTimeSlot(x.getScheduled_departure).getDescription), x.getTaxi_out.toDouble))
       .aggregateByKey((0.0, 0.0))((a, v) => (a._1 + v, a._2 + 1), (a1, a2) => (a1._1 + a2._1, a1._2 + a2._2))
       .map({ case (k, v) => (k._1, (k._2, v._1 / v._2)) })
-      .join(rddAirports)
-      .map({ case (k, v) => ((v._2, v._1._1), v._1._2) })
-      .sortBy(_._2, ascending = false)
-      .coalesce(1)
+
+    val broadcastRddAirports = sc.broadcast(rddAirports.collectAsMap())
+
+    val rddJoinedForAirports = rddFlightsForAirports
+      .map({ case (k, v) => (broadcastRddAirports.value.get(k), v) })
+      .filter(_._1.isDefined)
+      .map({ case (k, v) => ((k.get, v._1), v._2) })
+      .sortBy(_._2, ascending = false, numPartitions = 1)
       .cache()
 
-    def toCSVLineForAirports(data: ((String, TimeSlot), Double)): String =
-      (data._1)._1 + "," + (data._1)._2.getDescription + "," + data._2.toString
+    def toCSVLineForAirports(data: ((String, String), Double)): String =
+      data._1._1 + "," + data._1._2 + "," + data._2.toString
 
-    val rddResultForAirports = rddFlightsForAirports.map(x => toCSVLineForAirports(x))
+    val rddResultForAirports = rddJoinedForAirports.map(x => toCSVLineForAirports(x))
     rddResultForAirports.collect()
     rddResultForAirports.overwrite("hdfs:/user/jgiovanelli/outputs/spark/third-job/airports")
-
 
   }
 }

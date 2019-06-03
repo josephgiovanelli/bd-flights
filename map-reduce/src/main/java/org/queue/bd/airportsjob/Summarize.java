@@ -44,7 +44,7 @@ public class Summarize implements MyJob {
 
 			final Flight flight = new Flight(value.toString());
             richSum.set(Integer.parseInt(flight.getTaxi_out()), 1);
-            richKey.set(flight.getOrigin_airport(), TimeSlot.getTimeSlot(flight.getDeparture_time()));
+            richKey.set(flight.getOrigin_airport(), TimeSlot.getTimeSlot(flight.getScheduled_departure()));
             context.write(richKey, richSum);
 		}
 	}
