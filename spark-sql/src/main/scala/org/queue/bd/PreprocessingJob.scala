@@ -19,6 +19,7 @@ object PreprocessingJob {
       .load("hdfs:/user/jgiovanelli/flights-dataset/raw/flights.csv")
       .filter(x => x.getAs[String]("CANCELLED") == "0" && x.getAs[String]("DIVERTED") == "0" &&
         x.getAs[String]("ORIGIN_AIRPORT").length == 3)
+      .select("AIRLINE", "ORIGIN_AIRPORT", "SCHEDULED_DEPARTURE", "TAXI_OUT", "ARRIVAL_DELAY")
       .write.mode("overwrite").csv("hdfs:/user/jgiovanelli/flights-dataset/clean/flights")
 
     //Airlines
@@ -35,6 +36,7 @@ object PreprocessingJob {
       .option("header", "true")
       .option("delimiter", ",")
       .load("hdfs:/user/jgiovanelli/flights-dataset/raw/airports.csv")
+      .select("IATA_CODE", "AIRPORT")
       .write.mode("overwrite").csv("hdfs:/user/jgiovanelli/flights-dataset/clean/airports")
 
   }
