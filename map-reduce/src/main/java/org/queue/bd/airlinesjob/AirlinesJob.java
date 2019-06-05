@@ -17,7 +17,7 @@ public class AirlinesJob {
 		jobs.add(new Summarize(
 				"flights-dataset/clean/flights",
 				"outputs/map-reduce/airlines/output1")
-                .getJob(1, false, false));
+                .getJob(1, true, true));
 		jobs.add(new Join(
 		        "outputs/map-reduce/airlines/output1",
                 "flights-dataset/clean/airlines",
