@@ -1,6 +1,5 @@
 package org.queue.bd.commons;
 
-import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.WritableComparator;
 import org.apache.hadoop.io.compress.SnappyCodec;
 import org.apache.hadoop.conf.Configuration;
@@ -66,21 +65,21 @@ public class Sort implements MyJob {
 		}
 	}
 
-    public static class IntComparator extends WritableComparator {
-        public IntComparator() {
-            super(IntWritable.class);
+    public static class DoubleComparator extends WritableComparator {
+        public DoubleComparator() {
+            super(DoubleWritable.class);
         }
 
-        private Integer int1;
-        private Integer int2;
+        private Double firstDouble;
+        private Double secondDouble;
 
         @Override
         public int compare(byte[] raw1, int offset1, int length1, byte[] raw2,
                            int offset2, int length2) {
-            int1 = ByteBuffer.wrap(raw1, offset1, length1).getInt();
-            int2 = ByteBuffer.wrap(raw2, offset2, length2).getInt();
+            firstDouble = ByteBuffer.wrap(raw1, offset1, length1).getDouble();
+            secondDouble = ByteBuffer.wrap(raw2, offset2, length2).getDouble();
 
-            return int2.compareTo(int1);
+            return secondDouble.compareTo(firstDouble);
         }
 
     }
@@ -113,7 +112,7 @@ public class Sort implements MyJob {
         job.setOutputKeyClass(Text.class);
         job.setOutputValueClass(DoubleWritable.class);
 
-        job.setSortComparatorClass(IntComparator.class);
+        job.setSortComparatorClass(DoubleComparator.class);
 
         job.setInputFormatClass(SequenceFileInputFormat.class);
         job.setOutputFormatClass(TextOutputFormat.class);
