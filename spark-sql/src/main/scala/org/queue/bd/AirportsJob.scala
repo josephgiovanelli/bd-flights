@@ -1,6 +1,8 @@
 package org.queue.bd
 
-import org.apache.spark.sql.SparkSession
+import org.apache.spark.sql.functions.broadcast
+import org.apache.spark.sql.types.{StringType, StructField, StructType}
+import org.apache.spark.sql.{Row, SparkSession}
 import pojos.{Airport, Flight}
 import utils.TimeSlot
 
@@ -16,29 +18,41 @@ object AirportsJob {
     val spark = SparkSession.builder().appName("SparkSQL AirportsJob").getOrCreate()
     val sc = spark.sparkContext
     val sqlContext = spark.sqlContext
+    sqlContext.setConf("spark.sql.shuffle.partitions", "20")
     import sqlContext.implicits._
 
-    val airportsDF = sc.textFile("hdfs:/user/jgiovanelli/flights-dataset/clean/airports")
-      .map(x => new Airport(x))
-      .map(x => YAAirport(x.getIata_code, x.getAirport)).toDF()
+    val airportsDF =  {
+      val airportsFile = sc.textFile("hdfs:/user/jgiovanelli/flights-dataset/clean/airports")
+      val schemaString = "IATA_CODE AIRPORT"
 
-    val flightsDF = sc.textFile("hdfs:/user/jgiovanelli/flights-dataset/clean/flights")
-      .map(x => new Flight(x))
-      .map(x => YAFlight(x.getOrigin_airport, TimeSlot.getTimeSlot(x.getScheduled_departure).getDescription, x.getTaxi_out.toDouble)).toDF()
+      val schema = StructType(schemaString.split(" ").map(fieldName => StructField(fieldName, StringType, nullable = false)))
+      val rowRDD = airportsFile.map(_.split(",")).map(e => Row(e(0), e(1)))
+      sqlContext.createDataFrame(rowRDD, schema)
+    }
 
-    airportsDF.createOrReplaceTempView("airport")
-    flightsDF.createOrReplaceTempView("flights")
+    val flightsDF = {
+      val flightsFile = sc.textFile("hdfs:/user/jgiovanelli/flights-dataset/clean/flights")
+      val schemaString = "AIRLINE ORIGIN_AIRPORT SCHEDULED_DEPARTURE TAXI_OUT_TEMP ARRIVAL_DELAY"
 
-    val summarizedFlightsDF = flightsDF.groupBy("origin_airport", "time_slot").avg("taxi_out")
+      val getTimeSlot = sqlContext.udf.register("getTimeSlot", (s: String) =>  TimeSlot.getTimeSlot(s).getDescription)
+      val stringToDouble = sqlContext.udf.register("stringToDouble", (s: String) =>  s.toDouble )
 
-    summarizedFlightsDF.createOrReplaceTempView("summarized_flights")
-    summarizedFlightsDF.show()
+      val schema = StructType(schemaString.split(" ").map(fieldName => StructField(fieldName, StringType, nullable = false)))
+      val rowRDD = flightsFile.map(_.split(",")).map(e => Row(e(0), e(1), e(2), e(3), e(4)))
+      val tempFlightsDF = sqlContext.createDataFrame(rowRDD, schema).select("ORIGIN_AIRPORT", "SCHEDULED_DEPARTURE", "TAXI_OUT_TEMP")
 
-    summarizedFlightsDF
-      .join(airportsDF, summarizedFlightsDF("origin_airport") === airportsDF("iata_code"))
-      .select("airport", "time_slot", "avg(taxi_out)")
+      tempFlightsDF
+        .withColumn("TIME_SLOT", getTimeSlot(tempFlightsDF("SCHEDULED_DEPARTURE")))
+        .withColumn("TAXI_OUT", stringToDouble(tempFlightsDF("TAXI_OUT_TEMP")))
+        .select("ORIGIN_AIRPORT", "TIME_SLOT", "TAXI_OUT")
+    }
+
+
+    flightsDF.groupBy("ORIGIN_AIRPORT", "TIME_SLOT").avg("TAXI_OUT")
+      .join(airportsDF, flightsDF("ORIGIN_AIRPORT") === airportsDF("IATA_CODE"))
+      .select("AIRPORT", "TIME_SLOT", "avg(TAXI_OUT)")
       .repartition(1)
-      .sortWithinPartitions($"avg(taxi_out)".desc)
+      .sortWithinPartitions($"avg(TAXI_OUT)".desc)
       .write.mode("overwrite").csv("hdfs:/user/jgiovanelli/outputs/spark-sql/airports")
 
   }

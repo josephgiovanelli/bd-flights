@@ -1,6 +1,7 @@
 package org.queue.bd
 
-import org.apache.spark.sql.SparkSession
+import org.apache.spark.sql.{Row, SparkSession}
+import org.apache.spark.sql.types.{StringType, StructField, StructType}
 import pojos.{Airline, Flight}
 
 object AirlinesJob {
@@ -15,31 +16,43 @@ object AirlinesJob {
     val spark = SparkSession.builder().appName("SparkSQL AirlinesJob").getOrCreate()
     val sc = spark.sparkContext
     val sqlContext = spark.sqlContext
+    sqlContext.setConf("spark.sql.shuffle.partitions", "20")
     import sqlContext.implicits._
 
-    val airlinesDF = sc.textFile("hdfs:/user/jgiovanelli/flights-dataset/clean/airlines")
-      .map(x => new Airline(x))
-      .map(x => YAAirline(x.getIata_code, x.getAirline)).toDF()
+    val airlinesDF =  {
+      val airlinesFile = sc.textFile("hdfs:/user/jgiovanelli/flights-dataset/clean/airlines")
+      val schemaString = "IATA_CODE AIRLINE"
 
-    val flightsDF = sc.textFile("hdfs:/user/jgiovanelli/flights-dataset/clean/flights")
-      .map(x => new Flight(x))
-      .map(x => YAFlight(x.getAirline, x.getArrival_delay.toDouble)).toDF()
+      val schema = StructType(schemaString.split(" ").map(fieldName => StructField(fieldName, StringType, nullable = false)))
+      val rowRDD = airlinesFile.map(_.split(",")).map(e => Row(e(0), e(1)))
+      sqlContext.createDataFrame(rowRDD, schema)
+    }
+
+
+    val flightsDF =  {
+      val flightsFile = sc.textFile("hdfs:/user/jgiovanelli/flights-dataset/clean/flights")
+      val schemaString = "AIRLINE ORIGIN_AIRPORT SCHEDULED_DEPARTURE TAXI_OUT ARRIVAL_DELAY_TEMP"
+
+      val stringToDouble = sqlContext.udf.register("stringToDouble", (s: String) =>  s.toDouble )
+
+      val schema = StructType(schemaString.split(" ").map(fieldName => StructField(fieldName, StringType, nullable = false)))
+      val rowRDD = flightsFile.map(_.split(",")).map(e => Row(e(0), e(1), e(2), e(3), e(4)))
+      val tempFlightsDF = sqlContext.createDataFrame(rowRDD, schema).select("AIRLINE", "ARRIVAL_DELAY_TEMP")
+
+      tempFlightsDF
+        .withColumn("ARRIVAL_DELAY", stringToDouble(tempFlightsDF("ARRIVAL_DELAY_TEMP")))
+        .select("AIRLINE", "ARRIVAL_DELAY")
+    }
 
     airlinesDF.createOrReplaceTempView("airlines")
     flightsDF.createOrReplaceTempView("flights")
 
-    val summarizedFlightsDF = sqlContext.sql(
-      """select airline, avg(arrival_delay) as average_delay
-        |from flights
-        |group by airline""".stripMargin)
-
-    summarizedFlightsDF.createOrReplaceTempView("summarized_flights")
-    summarizedFlightsDF.show()
-
     sqlContext.sql(
-      """select A.airline, SF.average_delay
-        |from summarized_flights SF
-        |join airlines A on SF.airline = A.iata_code""".stripMargin)
+      """select A.AIRLINE, SF.AVERAGE_DELAY
+        |from (select AIRLINE, avg(ARRIVAL_DELAY) as AVERAGE_DELAY
+        |      from flights
+        |      group by AIRLINE) SF
+        |join airlines A on SF.AIRLINE = A.IATA_CODE""".stripMargin)
       .coalesce(1)
       .sortWithinPartitions($"average_delay".desc)
       .write.mode("overwrite").csv("hdfs:/user/jgiovanelli/outputs/spark-sql/airlines")
