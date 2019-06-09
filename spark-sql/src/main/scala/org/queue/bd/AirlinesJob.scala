@@ -2,7 +2,6 @@ package org.queue.bd
 
 import org.apache.spark.sql.{Row, SparkSession}
 import org.apache.spark.sql.types.{StringType, StructField, StructType}
-import pojos.{Airline, Flight}
 
 object AirlinesJob {
 
@@ -16,7 +15,6 @@ object AirlinesJob {
     val spark = SparkSession.builder().appName("SparkSQL AirlinesJob").getOrCreate()
     val sc = spark.sparkContext
     val sqlContext = spark.sqlContext
-    sqlContext.setConf("spark.sql.shuffle.partitions", "20")
     import sqlContext.implicits._
 
     val airlinesDF =  {
