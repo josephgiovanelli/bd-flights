@@ -13,7 +13,7 @@ object MachineLearningJob {
 
   def main(args: Array[String]): Unit = {
 
-    val spark = SparkSession.builder().appName("SparkSQL PreprocessingJob").getOrCreate()
+    val spark = SparkSession.builder().appName("SparkSQL MachineLearningJob - Decision Tree").getOrCreate()
     val sc = spark.sparkContext
     val sqlContext = spark.sqlContext
 
@@ -227,16 +227,22 @@ object MachineLearningJob {
 
     val assembler = new VectorAssembler()
       .setInputCols(Array("AirlineIndex", "AverageAirlineDelay", "TimeSlotIndex", "Month", "DayOfWeek",
-        "DistanceBucketed", "OriginLatitudeArea", "OriginLongitudeArea", "OriginStateIndex", "AverageTaxiOut",
-        "DestinationLatitudeArea", "DestinationLongitudeArea","DestinationStateIndex"))
+        "DistanceBucketed", "OriginLatitudeArea", "OriginLongitudeArea", "AverageTaxiOut",
+        "DestinationLatitudeArea", "DestinationLongitudeArea"))
       .setOutputCol("features")
+
+    /*import org.apache.spark.ml.feature.Normalizer
+
+    val normalizer = new Normalizer()
+      .setInputCol("features_temp")
+      .setOutputCol("features")*/
 
     import org.apache.spark.ml.classification.DecisionTreeClassifier
 
 
     val dt = new DecisionTreeClassifier()
       .setMaxDepth(10)
-      .setMaxBins(54)
+      .setMaxBins(20)
       .setFeaturesCol("features")
       .setLabelCol("DelayIndex")
 
