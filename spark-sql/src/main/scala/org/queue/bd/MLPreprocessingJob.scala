@@ -3,6 +3,9 @@ package org.queue.bd
 import org.apache.spark.sql.SparkSession
 import utils.TimeSlot
 
+/**
+  * SparkSQL job to prepare the data only to the MachineLearningJob
+  */
 object MLPreprocessingJob {
 
 
@@ -12,31 +15,35 @@ object MLPreprocessingJob {
     val sc = spark.sparkContext
     val sqlContext = spark.sqlContext
 
-    //Airports
+    //loading the airports data set from the hdfs
     val airports = sqlContext.read
       .format("csv")
       .option("header", "true")
       .option("delimiter", ",")
       .load("hdfs:/user/jgiovanelli/flights-dataset/raw/airports.csv")
+      //selecting the fields of interest
       .select("IATA_CODE", "AIRPORT", "LATITUDE", "LONGITUDE", "STATE")
 
-    //Airlines
+    //loading the airlines data set from the hdfs
     val airlines = sqlContext.read
       .format("csv")
       .option("header", "true")
       .option("delimiter", ",")
       .load("hdfs:/user/jgiovanelli/flights-dataset/raw/airlines.csv")
+      //renaming the fields in order to avoid conflicts during the join
       .withColumnRenamed("IATA_CODE", "AIRLINES_IATA_CODE")
       .withColumnRenamed("AIRLINE", "AIRLINES_NAME")
 
-    //Flights
+    //loading the flights data set from the hdfs
     val flights = sqlContext.read
       .format("csv")
       .option("header", "true")
       .option("delimiter", ",")
       .load("hdfs:/user/jgiovanelli/flights-dataset/raw/flights.csv")
+      //deleting the cancelled and diverted flights and the flights having an invalid origin airport iata code (> 3 chars)
       .filter(x => x.getAs[String]("CANCELLED") == "0" && x.getAs[String]("DIVERTED") == "0" &&
         x.getAs[String]("ORIGIN_AIRPORT").length == 3)
+      //selecting the fields of interest
       .select("ORIGIN_AIRPORT", "DESTINATION_AIRPORT", "AIRLINE", "SCHEDULED_DEPARTURE", "MONTH", "DAY_OF_WEEK", "DISTANCE", "ARRIVAL_DELAY")
 
     //Flights Join Origin Airport
@@ -61,7 +68,7 @@ object MLPreprocessingJob {
     val trainDataTemp3 = trainDataTemp2
       .join(airlines, trainDataTemp("AIRLINE") === airlines("AIRLINES_IATA_CODE"))
 
-    //Flights Join Airlines Statistics
+    //Flights Join Airlines Statistics (from Airlines Job)
     import org.apache.spark.sql.Row
     import org.apache.spark.sql.types.{StructType,StructField,StringType}
     val airlinesStatisticsFile = sc.textFile("hdfs:/user/jgiovanelli/outputs/spark-sql/airlines/")
@@ -79,14 +86,15 @@ object MLPreprocessingJob {
     trainData.show(5)
     trainData.describe().show()
 
-    // Pre processing
 
+    //udf to extract the time slot from the scheduled departure
     val extractTimeSlot = sqlContext.udf.register("extractTimeSlot",
       (scheduled_departure: String) => {
         TimeSlot.getTimeSlot(scheduled_departure).getDescription
       })
 
-    val extractDelayThreeshold = sqlContext.udf.register("extractDelayThreeshold",
+    //udf to extract the label from the arrival delay
+    val extractDelayLabel = sqlContext.udf.register("extractDelayLabel",
       (arrival_delay: Int) => {
         if (arrival_delay > 0) {
           "1"
@@ -95,33 +103,25 @@ object MLPreprocessingJob {
         }
       })
 
+    //udf to extract the latitude area from the airport latitude
     val extractLatitudeArea = sqlContext.udf.register("extractLatitudeArea",
-      (latitude: Double) => {
-        if (latitude < 30.0) {
-          "0"
-        } else if (latitude < 40.0){
-          "1"
-        } else if (latitude < 50.0){
-          "2"
-        } else {
-          "3"
-        }
+      (latitude: Double) => latitude match {
+        case _ if latitude < -30.0 => "0"
+        case _ if latitude < -40.0 => "1"
+        case _ if latitude < -50.0 => "2"
+        case _ => "3"
       })
 
+    //udf to extract the longitude area from the airport longitude
     val extractLongitudeArea = sqlContext.udf.register("extractLongitudeArea",
-      (longitude: Double) => {
-        if (longitude < -130.0) {
-          "0"
-        } else if (longitude < -110.0){
-          "1"
-        } else if (longitude < -90.0){
-          "2"
-        } else {
-          "3"
-        }
+      (longitude: Double) => longitude match {
+        case _ if longitude < -130.0 => "0"
+        case _ if longitude < -110.0 => "1"
+        case _ if longitude < -90.0 => "2"
+        case _ => "3"
       })
 
-
+    //udfs to converts primitive types
     val stringToInt = sqlContext.udf.register("stringToInt", (s: String) => s.toInt)
     val intToDouble = sqlContext.udf.register("intToDouble", (i: Int) => i.toDouble)
     val stringToDouble = sqlContext.udf.register("stringToDouble", (s: String) =>  {
@@ -133,6 +133,7 @@ object MLPreprocessingJob {
     })
 
 
+    //applying the previous udfs to the data set
     val trainData2 = trainData
       .withColumn("Airline", trainData("AIRLINE"))
       .withColumn("TimeSlot", extractTimeSlot(trainData("SCHEDULED_DEPARTURE")))
@@ -148,10 +149,10 @@ object MLPreprocessingJob {
       .withColumn("OriginAirportName", trainData("ORIGIN_AIRPORT_NAME"))
       .withColumn("OriginAirport", trainData("ORIGIN_AIRPORT"))
       .withColumn("AverageAirlineDelay", stringToDouble(airlinesStatistics("STATISTICS_AVG_DELAY")))
-      .withColumn("Delay", intToDouble(extractDelayThreeshold(stringToInt(trainData("ARRIVAL_DELAY")))))
+      .withColumn("Delay", intToDouble(extractDelayLabel(stringToInt(trainData("ARRIVAL_DELAY")))))
 
 
-    //Airports Statistics
+    //joining with Airport Statistics (from Airlines Job)
     import org.apache.spark.sql.Row
     import org.apache.spark.sql.types.{StructType,StructField,StringType}
     val airportsStatisticsFile = sc.textFile("hdfs:/user/jgiovanelli/outputs/spark-sql/airports/")
@@ -164,12 +165,13 @@ object MLPreprocessingJob {
     val trainData3 = trainData2
       .join(airportsStatistics, trainData2("OriginAirportName") === airportsStatistics("AIRPORT") && trainData2("TimeSlot") === airportsStatistics("TIME_SLOT"))
 
-    val trainDataFinal = trainData3
+    trainData3
       .withColumn("AverageTaxiOut", stringToDouble(trainData3("AVG_TAXI_OUT")))
+      //selecting the fields of interest
       .select("Airline", "TimeSlot", "Month", "DayOfWeek", "Distance", "OriginLatitudeArea", "OriginLongitudeArea",
         "OriginState", "DestinationLatitudeArea", "DestinationLongitudeArea", "DestinationState", "OriginAirport",
         "AverageAirlineDelay", "Delay", "AverageTaxiOut")
-      .repartition(1)
+      //writing the result
       .write.mode("overwrite").csv("hdfs:/user/jgiovanelli/outputs/spark-sql/ml-preprocessing")
 
 

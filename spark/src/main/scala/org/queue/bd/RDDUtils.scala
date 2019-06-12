@@ -4,6 +4,9 @@ import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.spark.rdd.RDD
 
+/**
+  * This utility object contains an implicit class that enriches the RDD functionalities, adding the overwrite save.
+  */
 object RDDUtils {
   implicit class RichRDD[T](rDD: RDD[T]) {
 
