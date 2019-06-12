@@ -16,7 +16,7 @@ object AirportsJob {
 
   def main(args: Array[String]): Unit = {
 
-    val sc = new SparkContext(new SparkConf().setAppName("Spark AirportsJob with BV"))
+    val sc = new SparkContext(new SparkConf().setAppName("Spark AirportsJob"))
 
     //loading the airports data set from the hdfs
     val rddAirports = sc.textFile("hdfs:/user/jgiovanelli/flights-dataset/clean/airports")
