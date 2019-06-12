@@ -1,4 +1,4 @@
-package org.queue.bd
+package org.queue.bd.ml
 
 import org.apache.spark.sql.SparkSession
 import utils.TimeSlot
@@ -70,7 +70,7 @@ object MLPreprocessingJob {
 
     //Flights Join Airlines Statistics (from Airlines Job)
     import org.apache.spark.sql.Row
-    import org.apache.spark.sql.types.{StructType,StructField,StringType}
+    import org.apache.spark.sql.types.{StringType, StructField, StructType}
     val airlinesStatisticsFile = sc.textFile("hdfs:/user/jgiovanelli/outputs/spark-sql/airlines/")
     val schemaString = "STATISTIC_AIRLINES_NAME STATISTICS_AVG_DELAY"
 
@@ -154,7 +154,7 @@ object MLPreprocessingJob {
 
     //joining with Airport Statistics (from Airlines Job)
     import org.apache.spark.sql.Row
-    import org.apache.spark.sql.types.{StructType,StructField,StringType}
+    import org.apache.spark.sql.types.{StringType, StructField, StructType}
     val airportsStatisticsFile = sc.textFile("hdfs:/user/jgiovanelli/outputs/spark-sql/airports/")
     val schemaString2 = "AIRPORT TIME_SLOT AVG_TAXI_OUT"
 
@@ -172,7 +172,7 @@ object MLPreprocessingJob {
         "OriginState", "DestinationLatitudeArea", "DestinationLongitudeArea", "DestinationState", "OriginAirport",
         "AverageAirlineDelay", "Delay", "AverageTaxiOut")
       //writing the result
-      .write.mode("overwrite").csv("hdfs:/user/jgiovanelli/outputs/spark-sql/ml-preprocessing")
+      .write.mode("overwrite").csv("hdfs:/user/jgiovanelli/outputs/spark-sql/machine-learning/ml-preprocessing")
 
 
 

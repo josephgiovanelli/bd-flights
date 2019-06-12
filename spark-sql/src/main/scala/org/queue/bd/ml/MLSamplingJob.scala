@@ -1,14 +1,13 @@
-package org.queue.bd
+package org.queue.bd.ml
 
+import org.apache.spark.sql.types.{StructField, StructType, _}
 import org.apache.spark.sql.{Row, SparkSession}
-import org.apache.spark.sql.types.{StructField, StructType}
-import org.apache.spark.sql.types._
 
 
 /**
   * SparkSQL job to prepare the data only to the Airlines and Airports Jobs (map-reduce, spark and spark-sql implementations)
   */
-object SampleJob {
+object MLSamplingJob {
 
 
   def main(args: Array[String]): Unit = {
@@ -17,7 +16,7 @@ object SampleJob {
     val sc = spark.sparkContext
     val sqlContext = spark.sqlContext
 
-    val mlPreprocessingFile = sc.textFile("hdfs:/user/jgiovanelli/outputs/spark-sql/ml-preprocessing/")
+    val mlPreprocessingFile = sc.textFile("hdfs:/user/jgiovanelli/outputs/spark-sql/machine-learning/ml-preprocessing/")
     val schemaString = "Airline TimeSlot Month DayOfWeek Distance OriginLatitudeArea OriginLongitudeArea OriginState DestinationLatitudeArea DestinationLongitudeArea DestinationState OriginAirport AverageAirlineDelay Delay AverageTaxiOut"
     val typeMap = Map("Airline" -> StringType, "TimeSlot" -> StringType, "Month" -> IntegerType, "DayOfWeek" -> IntegerType,
       "Distance" -> DoubleType, "OriginLatitudeArea" -> IntegerType, "OriginLongitudeArea" -> IntegerType,
@@ -32,9 +31,9 @@ object SampleJob {
     val trainDataFinal = sqlContext.createDataFrame(rowRDD, schema)
 
     trainDataFinal
-      .sample(withReplacement = false, 0.001)
+      .sample(withReplacement = false, 0.1)
       .repartition(1)
-      .write.mode("overwrite").csv("hdfs:/user/jgiovanelli/outputs/spark-sql/ml-sampling")
+      .write.mode("overwrite").csv("hdfs:/user/jgiovanelli/outputs/spark-sql/machine-learning/ml-sampling/")
 
 
   }
