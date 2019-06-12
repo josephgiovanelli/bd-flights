@@ -12,6 +12,12 @@ import org.apache.spark.sql.{DataFrame, Row, SparkSession}
 
 object MachineLearningJob {
 
+  /**
+    * Saves the given content in the given path
+    * @param content what to save
+    * @param path where to save
+    * @param sc the spark context
+    */
   def save(content: String, path: String)(implicit sc: SparkContext): Unit = {
     val fs = FileSystem.get(sc.hadoopConfiguration)
 
@@ -26,6 +32,13 @@ object MachineLearningJob {
     }
   }
 
+  /**
+    * Evaluates the given data set and return the result formatted as a string
+    * @param set the set to evaluate
+    * @param label the label to insert in the result
+    * @param spark the spark session
+    * @return the result string
+    */
   def evaluate(set: DataFrame, label: String)(implicit spark: SparkSession): String = {
 
     import spark.implicits._
@@ -61,7 +74,7 @@ object MachineLearningJob {
     implicit val sc: SparkContext = spark.sparkContext
     val sqlContext = spark.sqlContext
 
-    //load MLPreprocessing output
+    //loading MLPreprocessing output
     val mlPreprocessingFile = sc.textFile("hdfs:/user/jgiovanelli/outputs/spark-sql/machine-learning/ml-preprocessing/")
     val schemaString = "Airline TimeSlot Month DayOfWeek Distance OriginLatitudeArea OriginLongitudeArea OriginState DestinationLatitudeArea DestinationLongitudeArea DestinationState OriginAirport AverageAirlineDelay Delay AverageTaxiOut"
     val typeMap = Map("Airline" -> StringType, "TimeSlot" -> StringType, "Month" -> IntegerType, "DayOfWeek" -> IntegerType,

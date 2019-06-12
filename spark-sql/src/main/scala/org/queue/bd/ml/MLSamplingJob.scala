@@ -16,6 +16,7 @@ object MLSamplingJob {
     val sc = spark.sparkContext
     val sqlContext = spark.sqlContext
 
+    //loading MLPreprocessing output
     val mlPreprocessingFile = sc.textFile("hdfs:/user/jgiovanelli/outputs/spark-sql/machine-learning/ml-preprocessing/")
     val schemaString = "Airline TimeSlot Month DayOfWeek Distance OriginLatitudeArea OriginLongitudeArea OriginState DestinationLatitudeArea DestinationLongitudeArea DestinationState OriginAirport AverageAirlineDelay Delay AverageTaxiOut"
     val typeMap = Map("Airline" -> StringType, "TimeSlot" -> StringType, "Month" -> IntegerType, "DayOfWeek" -> IntegerType,
@@ -30,9 +31,11 @@ object MLSamplingJob {
       e(5).toInt, e(6).toInt, e(7), e(8).toInt, e(9).toInt, e(10), e(11), e(12).toDouble, e(13).toDouble, e(14).toDouble))
     val trainDataFinal = sqlContext.createDataFrame(rowRDD, schema)
 
+    //executing the sampling
     trainDataFinal
-      .sample(withReplacement = false, 0.1)
+      .sample(withReplacement = false, 0.2)
       .repartition(1)
+      //saving the results
       .write.mode("overwrite").csv("hdfs:/user/jgiovanelli/outputs/spark-sql/machine-learning/ml-sampling/")
 
 
