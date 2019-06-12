@@ -8,31 +8,52 @@ import java.io.DataOutput;
 import java.io.IOException;
 import java.util.Objects;
 
+/**
+ * This is class is used as key between the map and reduce tasks of the SummarizeJob
+ */
 public class RichKey implements WritableComparable {
 
+    //stores the airports iata code
     private String airport;
+    //stores the time slot in which the flight departs
     private TimeSlot timeSlot;
 
     public RichKey() { }
 
+    /**
+     * Sets the airport and the time slot values
+     * @param airport the airports iata code
+     * @param timeSlot the time slot in which the flight departs
+     */
     public void set(final String airport, final TimeSlot timeSlot){
         this.airport = airport;
         this.timeSlot = timeSlot;
     }
 
+    /**
+     * Returns the complete airports name
+     * @return the complete airports name
+     */
     public String getAirport() {
         return airport;
     }
 
+    /**
+     * Returns the average of the taxi out delays
+     * @return the average of the taxi out delays
+     */
     public TimeSlot getTimeSlot() {
         return timeSlot;
     }
 
+    @Override
     public void write(DataOutput out) throws IOException {
         out.writeInt(airport.length());
         out.writeChars(airport);
         out.writeInt(timeSlot.ordinal());
     }
+
+    @Override
     public void readFields(DataInput in) throws IOException {
         airport = "";
         final int airportLength = in.readInt();

@@ -26,7 +26,7 @@ import java.util.LinkedList;
 import java.util.List;
 
 /**
- * MapReduce job to join Summarize job and airlines.csv.
+ * MapReduce job to join Summarize job output and airports.csv in order to add the airport complete name.
  */
 public class Join implements MyJob {
 
@@ -43,7 +43,7 @@ public class Join implements MyJob {
     }
 		
 	/**
-	 * Mapper for Summarize job
+	 * Mapper for Summarize job.
 	 */
 	public static class FirstMapper
     	extends Mapper<Text, DoubleWritable, Text, RichAirport>{
@@ -63,7 +63,7 @@ public class Join implements MyJob {
 	}
 	
 	/**
-	 * Mapper for airlines dataset
+	 * Mapper for airlines data set.
 	 */
 	public static class SecondMapper
 	extends Mapper<LongWritable, Text, Text, RichAirport>{
@@ -83,8 +83,9 @@ public class Join implements MyJob {
 	}
 
 	/**
-	 * Reducer
-	 */
+	 * Reducer.
+     * Every record produced by the second mapper has at most 4 references (due to the time slots considered for each airport) in the Summarize Job output.
+     */
 	public static class JobReducer
 	    extends Reducer<Text, RichAirport, Text, DoubleWritable> {
 

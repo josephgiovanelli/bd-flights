@@ -6,7 +6,7 @@ import org.queue.bd.commons.Sort;
 import java.util.ArrayList;
 
 /**
- * MapReduce job to ...
+ * MapReduce job to list the airports in each time slot ordered descendingly by the average taxi out delay.
  */
 public class AirportsJob {
 

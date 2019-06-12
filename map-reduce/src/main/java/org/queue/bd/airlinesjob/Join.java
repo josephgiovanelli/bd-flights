@@ -23,7 +23,7 @@ import pojos.Airline;
 import java.io.IOException;
 
 /**
- * MapReduce job to join Summarize job and airlines.csv.
+ * MapReduce job to join Summarize job output and airlines.csv in order to add the airline complete name.
  */
 public class Join implements MyJob {
 
@@ -40,7 +40,7 @@ public class Join implements MyJob {
     }
 
     /**
-	 * Mapper for Summarize job
+	 * Mapper for Summarize job.
 	 */
 	public static class FirstMapper
     	extends Mapper<Text, DoubleWritable, Text, RichAirline>{
@@ -56,7 +56,7 @@ public class Join implements MyJob {
 	}
 	
 	/**
-	 * Mapper for airlines dataset
+	 * Mapper for airlines data set.
 	 */
 	public static class SecondMapper
 	extends Mapper<LongWritable, Text, Text, RichAirline>{
@@ -76,7 +76,9 @@ public class Join implements MyJob {
 	}
 
 	/**
-	 * Reducer
+	 * Reducer.
+     * Every record produced by the first mapper has only one reference in the airline data set.
+     * Indeed, for each key, only two elements are expected in the values list: there is a 1-1 relation.
 	 */
 	public static class JobReducer
 	    extends Reducer<Text, RichAirline, Text, DoubleWritable> {

@@ -21,6 +21,10 @@ import pojos.Flight;
 
 import java.io.IOException;
 
+/**
+ * MapReduce job to compute the average taxi out delay of each airport present in the flights.csv. For every airport are
+ * considered four daily time slots, assigned to every flight according to the scheduled departure time.
+ */
 public class Summarize implements MyJob {
 
     private static final String JOB_NAME = "summarize";
@@ -33,6 +37,11 @@ public class Summarize implements MyJob {
         this.outputPath = outputPath;
     }
 
+    /**
+     * This mapper takes the flights.csv lines as input, and for each of them produces a tuple having the origin airport
+     * code, combined with the flight time slot using the RichKey class, as key and the taxi out delay as output.
+     * The value is structured in order to allow the computation of the average using a combiner.
+     */
     public static class SummarizeMapper
 	extends Mapper<LongWritable, Text, RichKey, RichSum>{
 
@@ -49,6 +58,9 @@ public class Summarize implements MyJob {
 		}
 	}
 
+    /**
+     * Combiner used to optimize the computation aggregating the local delays for each key.
+     */
     public static class RichSumCombiner
             extends Reducer<RichKey, RichSum, RichKey, RichSum> {
 
@@ -70,6 +82,9 @@ public class Summarize implements MyJob {
         }
     }
 
+    /**
+     * Reducer that takes output produced in the previous step (map or combine) an computes the average.
+     */
 	public static class SummarizeReducer
 	extends Reducer<RichKey, RichSum, Text, DoubleWritable> {
 

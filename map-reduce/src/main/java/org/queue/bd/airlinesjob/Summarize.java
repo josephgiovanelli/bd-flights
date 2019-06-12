@@ -1,6 +1,5 @@
 package org.queue.bd.airlinesjob;
 
-import org.apache.hadoop.io.compress.GzipCodec;
 import org.apache.hadoop.io.compress.SnappyCodec;
 import org.apache.hadoop.mapreduce.lib.output.SequenceFileOutputFormat;
 import org.queue.bd.MyJob;
@@ -20,6 +19,9 @@ import pojos.Flight;
 
 import java.io.IOException;
 
+/**
+ * MapReduce job to compute the average arrival delay of each airline present in the flights.csv.
+ */
 public class Summarize implements MyJob {
 
     private static final String JOB_NAME = "summarize";
@@ -32,6 +34,10 @@ public class Summarize implements MyJob {
         this.outputPath = outputPath;
     }
 
+    /**
+     * This mapper takes the flights.csv lines as input, and for each of them produces a tuple having the airline code as key
+     * and the arrival delay as output. The value is structured in order to allow the computation of the average using a combiner.
+     */
     public static class SummarizeMapper
 	extends Mapper<LongWritable, Text, Text, RichSum>{
 
@@ -48,6 +54,9 @@ public class Summarize implements MyJob {
 		}
 	}
 
+    /**
+     * Combiner used to optimize the computation aggregating the local delays for each key.
+     */
     public static class RichSumCombiner
     extends Reducer<Text, RichSum, Text, RichSum> {
 
@@ -67,6 +76,9 @@ public class Summarize implements MyJob {
         }
     }
 
+    /**
+     * Reducer that takes output produced in the previous step (map or combine) an computes the average.
+     */
 	public static class SummarizeReducer
 	extends Reducer<Text, RichSum, Text, DoubleWritable> {
 

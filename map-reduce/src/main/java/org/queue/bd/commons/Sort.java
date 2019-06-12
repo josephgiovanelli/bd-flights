@@ -22,6 +22,9 @@ import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 
+/**
+ * Common Job that sorts the given input on the value of the mapper
+ */
 public class Sort implements MyJob {
 
     private static final String JOB_NAME = "sort";
@@ -35,6 +38,10 @@ public class Sort implements MyJob {
     }
 
 
+    /**
+     * It takes records that consist of a string key and double value.
+     * It swaps key and value in order to sort them according to the new key.
+     */
 	public static class SortMapper
 	extends Mapper<Text, DoubleWritable, DoubleWritable, Text>{
 
@@ -44,6 +51,11 @@ public class Sort implements MyJob {
 		}
 	}
 
+    /**
+     * It takes records that consist of a double key and string value.
+     * The ordering is performed by the framework itself so the only thing that this task does is again the swap.
+     * Records with the same key are lexicographically ordered  on the value.
+     */
 	public static class SortReducer
 	extends Reducer<DoubleWritable, Text, Text, DoubleWritable> {
 
@@ -65,6 +77,9 @@ public class Sort implements MyJob {
 		}
 	}
 
+    /**
+     * It allows to sort the records in descending order.
+     */
     public static class DoubleComparator extends WritableComparator {
         public DoubleComparator() {
             super(DoubleWritable.class);

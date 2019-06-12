@@ -6,7 +6,7 @@ import org.queue.bd.commons.Sort;
 import java.util.ArrayList;
 
 /**
- * MapReduce job to ...
+ * MapReduce job to list the airlines ordered descendingly on the average arrival delay.
  */
 public class AirlinesJob {
 

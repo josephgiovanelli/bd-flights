@@ -1,7 +1,7 @@
 package pojos;
 
 /**
- * Pojo class to store information related to a give flight
+ * Pojo class to store information related to a given flight
  */
 public class Flight {
 
