@@ -70,7 +70,7 @@ object MachineLearningJob {
 
   def main(args: Array[String]): Unit = {
 
-    implicit val spark: SparkSession = SparkSession.builder().appName("SparkSQL MachineLearningJob - Logistic Regression").getOrCreate()
+    implicit val spark: SparkSession = SparkSession.builder().appName("SparkSQL MachineLearningJob").getOrCreate()
     implicit val sc: SparkContext = spark.sparkContext
     val sqlContext = spark.sqlContext
 
@@ -116,7 +116,7 @@ object MachineLearningJob {
       .setInputCol("Delay")
       .setOutputCol("DelayIndex")
 
-    //creating bucketizer
+    //creating bucketizers
     import org.apache.spark.ml.feature.Bucketizer
 
     val distanceSplits = Range(0, 3000, 200).map(x => x.toDouble).toArray :+ Double.PositiveInfinity
@@ -179,7 +179,8 @@ object MachineLearningJob {
           .setLabelCol("DelayIndex")
 
         new Pipeline()
-          .setStages(Array(airlineInd, timeSlotInd, originStateInd, destinationStateInd, originAirportInd, delayInd, distanceBucketize, assembler, normalizer, lr))
+          .setStages(Array(airlineInd, timeSlotInd, originStateInd, destinationStateInd, originAirportInd, delayInd,
+            distanceBucketize, arrivalDelayBucketize, taxiOutBucketize, assembler, normalizer, lr))
 
       }
     }
