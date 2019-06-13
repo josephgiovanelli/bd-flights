@@ -76,12 +76,12 @@ object MachineLearningJob {
 
     //loading MLPreprocessing output
     val mlPreprocessingFile = sc.textFile("hdfs:/user/jgiovanelli/outputs/spark-sql/machine-learning/ml-preprocessing/")
-    val schemaString = "Airline TimeSlot Month DayOfWeek Distance OriginLatitudeArea OriginLongitudeArea OriginState DestinationLatitudeArea DestinationLongitudeArea DestinationState OriginAirport AverageAirlineDelay Delay AverageTaxiOut"
+    val schemaString = "Airline TimeSlot Month DayOfWeek Distance OriginLatitudeArea OriginLongitudeArea OriginState DestinationLatitudeArea DestinationLongitudeArea DestinationState OriginAirport AverageArrivalDelay Delay AverageTaxiOut"
     val typeMap = Map("Airline" -> StringType, "TimeSlot" -> StringType, "Month" -> IntegerType, "DayOfWeek" -> IntegerType,
     "Distance" -> DoubleType, "OriginLatitudeArea" -> IntegerType, "OriginLongitudeArea" -> IntegerType,
       "OriginState" -> StringType, "DestinationLatitudeArea" -> IntegerType, "DestinationLongitudeArea" -> IntegerType,
       "DestinationState" -> StringType, "OriginAirport" -> StringType,
-      "AverageAirlineDelay" -> DoubleType, "Delay" -> DoubleType, "AverageTaxiOut" -> DoubleType)
+      "AverageArrivalDelay" -> DoubleType, "Delay" -> DoubleType, "AverageTaxiOut" -> DoubleType)
 
     val schema = StructType(schemaString.split(" ").map(fieldName => StructField(fieldName, typeMap(fieldName), nullable = false)))
 
@@ -108,7 +108,7 @@ object MachineLearningJob {
       .setInputCol("DestinationState")
       .setOutputCol("DestinationStateIndex")
 
-    val originAirport = new StringIndexer()
+    val originAirportInd = new StringIndexer()
       .setInputCol("OriginAirport")
       .setOutputCol("OriginAirportIndex")
 
@@ -126,13 +126,27 @@ object MachineLearningJob {
       .setOutputCol("DistanceBucketed")
       .setSplits(distanceSplits)
 
+    val arrivalDelaySplits = Range(-1, 17, 3).map(x => x.toDouble).toArray :+ Double.PositiveInfinity
+
+    val arrivalDelayBucketize = new Bucketizer()
+      .setInputCol("AverageArrivalDelay")
+      .setOutputCol("AverageArrivalDelayBucketed")
+      .setSplits(arrivalDelaySplits)
+
+    val taxiOutSplits = Range(0, 30, 5).map(x => x.toDouble).toArray :+ Double.PositiveInfinity
+
+    val taxiOutBucketize = new Bucketizer()
+      .setInputCol("AverageTaxiOut")
+      .setOutputCol("AverageTaxiOutBucketed")
+      .setSplits(taxiOutSplits)
+
     import org.apache.spark.ml.feature.VectorAssembler
 
     //creating assembler
     val assembler = new VectorAssembler()
-      .setInputCols(Array("AirlineIndex", "AverageAirlineDelay", "OriginAirportIndex", "TimeSlotIndex", "Month", "DayOfWeek",
-        "DistanceBucketed", "OriginLatitudeArea", "OriginLongitudeArea", "AverageTaxiOut",
-        "DestinationLatitudeArea", "DestinationLongitudeArea"))
+      .setInputCols(Array("AirlineIndex", "AverageArrivalDelayBucketed", "OriginStateIndex", "DestinationStateIndex",
+        "TimeSlotIndex", "Month", "DayOfWeek", "DistanceBucketed", "OriginLatitudeArea", "OriginLongitudeArea",
+        "OriginAirportIndex", "AverageTaxiOutBucketed", "DestinationLatitudeArea", "DestinationLongitudeArea"))
       .setOutputCol("features")
 
 
@@ -152,7 +166,8 @@ object MachineLearningJob {
           .setLabelCol("DelayIndex")
 
         new Pipeline()
-          .setStages(Array(airlineInd, timeSlotInd, originStateInd, destinationStateInd, originAirport, delayInd, distanceBucketize, assembler, dt))
+          .setStages(Array(airlineInd, timeSlotInd, originStateInd, destinationStateInd, originAirportInd, delayInd,
+            distanceBucketize, arrivalDelayBucketize, taxiOutBucketize, assembler, dt))
       } else {
         val normalizer = new Normalizer()
           .setInputCol("features")
@@ -164,7 +179,7 @@ object MachineLearningJob {
           .setLabelCol("DelayIndex")
 
         new Pipeline()
-          .setStages(Array(airlineInd, timeSlotInd, originStateInd, destinationStateInd, originAirport, delayInd, distanceBucketize, assembler, normalizer, lr))
+          .setStages(Array(airlineInd, timeSlotInd, originStateInd, destinationStateInd, originAirportInd, delayInd, distanceBucketize, assembler, normalizer, lr))
 
       }
     }
@@ -198,7 +213,7 @@ object MachineLearningJob {
 
     //printing tree model
     if (args(0) == "tree") {
-      save(model.stages(8).asInstanceOf[DecisionTreeClassificationModel].toDebugString,
+      save(model.stages(10).asInstanceOf[DecisionTreeClassificationModel].toDebugString,
         s"hdfs:/user/jgiovanelli/outputs/spark-sql/machine-learning/ml-results/${args(0)}/tree-model.txt")
     }
 
