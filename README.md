@@ -12,3 +12,4 @@ We use performed them using:
 
 In the end we used MLlib to train some Machine learning algorithms to understand, from the characteristics of the flight, if it could be subject to delay.
 We depicted the results with Tableu.
+The report is situated in the report folder.
